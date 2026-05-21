@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: weather-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python qywx_websocket.py
+    autoDeploy: true
+    healthCheckPath: /
