@@ -26,6 +26,7 @@ RECONNECT_DELAY_BASE = 1
 RECONNECT_DELAY_CAP = 30
 
 ws_instance = None
+subscribe_timeout = None
 
 def generate_req_id():
     return str(uuid.uuid4()).replace("-", "")
@@ -180,9 +181,19 @@ def send_weather_to_chat(ws, chatid, chat_type):
         print(f"[定时任务] 获取天气失败: {e}")
 
 def on_open(ws):
-    global ws_instance
+    global ws_instance, subscribe_timeout
     ws_instance = ws
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] WebSocket 连接已建立")
+    
+    def check_subscribe_timeout():
+        global ws_instance
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 订阅超时，强制断开连接重连")
+        if ws_instance and ws_instance.sock and ws_instance.sock.connected:
+            ws_instance.close()
+    
+    subscribe_timeout = threading.Timer(30, check_subscribe_timeout)
+    subscribe_timeout.start()
+    
     send_subscribe(ws)
     
 def send_subscribe(ws):
@@ -190,7 +201,8 @@ def send_subscribe(ws):
     subscribe_msg = {
         "cmd": "aibot_subscribe",
         "headers": {
-            "req_id": req_id
+            "req_id": req_id,
+            "timestamp": int(time.time())
         },
         "body": {
             "bot_id": BOT_ID,
@@ -200,6 +212,7 @@ def send_subscribe(ws):
     try:
         ws.send(json.dumps(subscribe_msg))
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送订阅请求: req_id={req_id}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 等待订阅响应...")
     except Exception as e:
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送订阅请求失败: {e}")
 
@@ -241,14 +254,29 @@ def handle_user_message(ws, body):
         return f"[{msgtype}消息]"
 
 def on_message(ws, message):
+    global subscribe_timeout
     try:
         data = json.loads(message)
+        req_id = data.get('headers', {}).get('req_id', 'N/A')
         
         if data.get('errcode') == 0:
-            pass
+            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到消息:")
+            print(f"    req_id: {req_id}")
+            print(f"    状态: 成功 (ok)")
+            
+            if subscribe_timeout:
+                subscribe_timeout.cancel()
+                subscribe_timeout = None
+                print(f"    订阅成功，取消超时定时器")
+                
         elif data.get('errcode') != 0:
+            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到消息:")
+            print(f"    req_id: {req_id}")
             print(f"    错误码: {data.get('errcode')}")
             print(f"    错误信息: {data.get('errmsg', '未知错误')}")
+            
+            if data.get('errcode') in [40001, 40002, 40003]:
+                print(f"    ⚠️ 凭证错误，请检查 Bot ID 和 Secret")
             
         cmd = data.get('cmd', '')
         if cmd == 'aibot_msg_callback':
@@ -260,10 +288,12 @@ def on_message(ws, message):
             print(f"    收到事件: {event_type}")
             
         elif cmd == 'pong':
-            pass
+            print(f"    Pong响应: req_id={req_id}")
+            
+        print(f"    原始数据: {json.dumps(data, ensure_ascii=False)}")
             
     except json.JSONDecodeError:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到非JSON消息: {message}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到非JSON消息: {message[:200]}...")
 
 def on_error(ws, error):
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 错误: {error}")
