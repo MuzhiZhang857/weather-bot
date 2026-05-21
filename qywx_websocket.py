@@ -5,9 +5,23 @@ import threading
 import uuid
 import ssl
 import requests
-import schedule
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+# 东八区时区
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+def get_beijing_time():
+    """获取东八区时间"""
+    return datetime.now(tz=BEIJING_TZ)
+
+def format_beijing_time(format_str="%Y-%m-%d %H:%M:%S"):
+    """格式化东八区时间"""
+    return get_beijing_time().strftime(format_str)
+
+def get_beijing_date_str():
+    """获取东八区日期字符串 (YYYY-MM-DD)"""
+    return get_beijing_time().strftime("%Y-%m-%d")
 
 BOT_ID = os.getenv("BOT_ID", "aibq4IJma9oTpus6NeE6--WVJtJaK_0O3wN")
 SECRET = os.getenv("SECRET", "ST6Ytrm7M1BAlVOCVxuGwMKrNg7hoWR3rStapaIak9D")
@@ -110,7 +124,7 @@ def get_clothing_advice(temp, weather, dressing_index):
         return "【穿衣】炎热，建议穿短袖，注意防暑"
 
 def format_weather_message(weather_now, weather_7d, indices, advice):
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = get_beijing_date_str()
     content = f"""**{date_str} {CITY_NAME}天气推送**
 
 **当前天气**: {weather_now['weather']}
@@ -130,7 +144,7 @@ def format_weather_message(weather_now, weather_7d, indices, advice):
 
 def send_message(ws, chatid, chat_type, content):
     if not ws or not ws.sock or not ws.sock.connected:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] WebSocket未连接，无法发送消息")
+        print(f"[{format_beijing_time()}] WebSocket未连接，无法发送消息")
         return False
     
     req_id = generate_req_id()
@@ -151,10 +165,10 @@ def send_message(ws, chatid, chat_type, content):
     
     try:
         ws.send(json.dumps(message))
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送消息: req_id={req_id}")
+        print(f"[{format_beijing_time()}] 发送消息: req_id={req_id}")
         return True
     except Exception as e:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送消息失败: {e}")
+        print(f"[{format_beijing_time()}] 发送消息失败: {e}")
         return False
 
 def send_weather_to_chat(ws, chatid, chat_type):
@@ -183,11 +197,11 @@ def send_weather_to_chat(ws, chatid, chat_type):
 def on_open(ws):
     global ws_instance, subscribe_timeout
     ws_instance = ws
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] WebSocket 连接已建立")
+    print(f"[{format_beijing_time()}] WebSocket 连接已建立")
     
     def check_subscribe_timeout():
         global ws_instance
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 订阅超时，强制断开连接重连")
+        print(f"[{format_beijing_time()}] 订阅超时，强制断开连接重连")
         if ws_instance and ws_instance.sock and ws_instance.sock.connected:
             ws_instance.close()
     
@@ -211,10 +225,10 @@ def send_subscribe(ws):
     }
     try:
         ws.send(json.dumps(subscribe_msg))
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送订阅请求: req_id={req_id}")
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 等待订阅响应...")
+        print(f"[{format_beijing_time()}] 发送订阅请求: req_id={req_id}")
+        print(f"[{format_beijing_time()}] 等待订阅响应...")
     except Exception as e:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 发送订阅请求失败: {e}")
+        print(f"[{format_beijing_time()}] 发送订阅请求失败: {e}")
 
 def handle_user_message(ws, body):
     msgtype = body.get('msgtype', '')
@@ -260,7 +274,7 @@ def on_message(ws, message):
         req_id = data.get('headers', {}).get('req_id', 'N/A')
         
         if data.get('errcode') == 0:
-            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到消息:")
+            print(f"\n[{format_beijing_time()}] 收到消息:")
             print(f"    req_id: {req_id}")
             print(f"    状态: 成功 (ok)")
             
@@ -270,7 +284,7 @@ def on_message(ws, message):
                 print(f"    订阅成功，取消超时定时器")
                 
         elif data.get('errcode') != 0:
-            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到消息:")
+            print(f"\n[{format_beijing_time()}] 收到消息:")
             print(f"    req_id: {req_id}")
             print(f"    错误码: {data.get('errcode')}")
             print(f"    错误信息: {data.get('errmsg', '未知错误')}")
@@ -293,15 +307,15 @@ def on_message(ws, message):
         print(f"    原始数据: {json.dumps(data, ensure_ascii=False)}")
             
     except json.JSONDecodeError:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 收到非JSON消息: {message[:200]}...")
+        print(f"[{format_beijing_time()}] 收到非JSON消息: {message[:200]}...")
 
 def on_error(ws, error):
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 错误: {error}")
+    print(f"[{format_beijing_time()}] 错误: {error}")
 
 def on_close(ws, close_status_code, close_msg):
     global ws_instance
     ws_instance = None
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] WebSocket 连接已关闭")
+    print(f"[{format_beijing_time()}] WebSocket 连接已关闭")
     print(f"    状态码: {close_status_code}")
     print(f"    原因: {close_msg}")
 
@@ -319,7 +333,7 @@ def send_heartbeat(ws):
                 ws.send(json.dumps(heartbeat))
             time.sleep(30)
         except Exception as e:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 心跳发送失败: {e}")
+            print(f"[{format_beijing_time()}] 心跳发送失败: {e}")
             break
 
 def schedule_task(ws):
@@ -327,12 +341,32 @@ def schedule_task(ws):
         if ws and ws.sock and ws.sock.connected:
             send_weather_to_chat(ws, SCHEDULE_CHAT_ID, SCHEDULE_CHAT_TYPE)
     
-    schedule.every().day.at(SCHEDULE_TIME).do(job)
-    print(f"[定时任务] 已设置每天 {SCHEDULE_TIME} 推送天气到群聊")
+    # 自定义 schedule 检查，确保使用东八区时间
+    def custom_scheduler():
+        print(f"[定时任务] 已设置每天 {SCHEDULE_TIME} (北京时间) 推送天气到群聊")
+        
+        last_executed_date = None
+        
+        while True:
+            try:
+                # 获取当前东八区时间
+                now = get_beijing_time()
+                current_time_str = now.strftime("%H:%M")
+                current_date_str = now.strftime("%Y-%m-%d")
+                
+                # 检查是否到达目标时间，且当天未执行过
+                if current_time_str == SCHEDULE_TIME and current_date_str != last_executed_date:
+                    print(f"[{format_beijing_time()}] 定时任务触发，开始推送天气")
+                    if ws and ws.sock and ws.sock.connected:
+                        send_weather_to_chat(ws, SCHEDULE_CHAT_ID, SCHEDULE_CHAT_TYPE)
+                    last_executed_date = current_date_str
+                
+                time.sleep(30)
+            except Exception as e:
+                print(f"[定时任务] 发生错误: {e}")
+                time.sleep(60)
     
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    custom_scheduler()
 
 def connect_with_reconnect():
     reconnect_count = 0
@@ -342,10 +376,10 @@ def connect_with_reconnect():
             print(f"\n{'='*60}")
             print(f"企业微信天气机器人启动")
             print(f"Bot ID: {BOT_ID}")
-            print(f"定时推送: 每天 {SCHEDULE_TIME}")
+            print(f"定时推送: 每天 {SCHEDULE_TIME} (北京时间)")
             print(f"推送目标: {SCHEDULE_CHAT_ID}")
             print(f"{'='*60}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 正在连接 WebSocket (第 {reconnect_count + 1} 次尝试)...")
+            print(f"[{format_beijing_time()}] 正在连接 WebSocket (第 {reconnect_count + 1} 次尝试)...")
             
             ws = websocket.WebSocketApp(
                 WS_URL,
@@ -371,21 +405,21 @@ def connect_with_reconnect():
             reconnect_count += 1
             if reconnect_count < MAX_RECONNECT_ATTEMPTS:
                 delay = min(RECONNECT_DELAY_BASE * (2 ** (reconnect_count - 1)), RECONNECT_DELAY_CAP)
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 连接断开，{delay}秒后尝试重新连接...")
+                print(f"[{format_beijing_time()}] 连接断开，{delay}秒后尝试重新连接...")
                 time.sleep(delay)
             
         except KeyboardInterrupt:
             print("\n用户中断，退出程序")
             return
         except Exception as e:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 连接失败: {e}")
+            print(f"[{format_beijing_time()}] 连接失败: {e}")
             reconnect_count += 1
             if reconnect_count < MAX_RECONNECT_ATTEMPTS:
                 delay = min(RECONNECT_DELAY_BASE * (2 ** (reconnect_count - 1)), RECONNECT_DELAY_CAP)
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {delay}秒后尝试重新连接...")
+                print(f"[{format_beijing_time()}] {delay}秒后尝试重新连接...")
                 time.sleep(delay)
     
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 已达到最大重连次数 ({MAX_RECONNECT_ATTEMPTS})，退出程序")
+    print(f"\n[{format_beijing_time()}] 已达到最大重连次数 ({MAX_RECONNECT_ATTEMPTS})，退出程序")
 
 if __name__ == "__main__":
     try:
