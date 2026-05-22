@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "description": "默认天气预警规则配置",
+  "rules": [
+    {
+      "rule_id": "rain_alert",
+      "name": "雨天预警",
+      "description": "检测到降雨天气时发出提醒",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "weather_includes": ["雨", "雷", "阵雨", "小雨", "中雨", "大雨", "暴雨"]
+      },
+      "message_template": "⚠️ 注意！今天有{weather}，请记得带伞，注意出行安全！"
+    },
+    {
+      "rule_id": "high_temp_alert",
+      "name": "高温预警",
+      "description": "当温度超过35度时发出提醒",
+      "enabled": true,
+      "priority": 20,
+      "conditions": {
+        "temp_above": 35
+      },
+      "message_template": "🔥 高温预警！当前温度{temp}°C，请注意防暑降温，多补充水分！"
+    },
+    {
+      "rule_id": "low_temp_alert",
+      "name": "低温预警",
+      "description": "当温度低于5度时发出提醒",
+      "enabled": true,
+      "priority": 20,
+      "conditions": {
+        "temp_below": 5
+      },
+      "message_template": "❄️ 低温预警！当前温度{temp}°C，请注意保暖，增添衣物！"
+    },
+    {
+      "rule_id": "strong_wind_alert",
+      "name": "大风预警",
+      "description": "当风力达到6级及以上时发出提醒",
+      "enabled": true,
+      "priority": 15,
+      "conditions": {
+        "wind_scale_above": 5
+      },
+      "message_template": "💨 大风预警！当前风力{windScale}级，请注意关好门窗，尽量避免高空作业！"
+    },
+    {
+      "rule_id": "high_humidity_alert",
+      "name": "高湿度提醒",
+      "description": "当湿度超过80%时发出提醒",
+      "enabled": true,
+      "priority": 5,
+      "conditions": {
+        "humidity_above": 80
+      },
+      "message_template": "💧 湿度较高（{humidity}%），体感可能较闷热，注意通风！"
+    },
+    {
+      "rule_id": "uv_strong_alert",
+      "name": "强紫外线提醒",
+      "description": "当紫外线指数较高时发出提醒",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "uv_index_includes": ["强", "很强", "极高"]
+      },
+      "message_template": "☀️ 紫外线{uv}，外出请做好防晒，涂抹防晒霜，佩戴遮阳帽！"
+    },
+    {
+      "rule_id": "cold_sensitive_alert",
+      "name": "感冒预警",
+      "description": "当感冒指数较高时发出提醒",
+      "enabled": true,
+      "priority": 8,
+      "conditions": {
+        "cold_index_includes": ["易发", "极易发"]
+      },
+      "message_template": "🤧 感冒{cold}，请注意气温变化，及时增减衣物，预防感冒！"
+    }
+  ]
+}
