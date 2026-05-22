@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "description": "用户自定义天气预警规则配置",
+  "rules": [
+    {
+      "rule_id": "custom_example",
+      "name": "自定义规则示例",
+      "description": "这是一个示例规则，您可以参考它创建自己的规则",
+      "enabled": false,
+      "priority": 5,
+      "conditions": {
+        "weather_includes": ["雪"]
+      },
+      "message_template": "❄️ 下雪了！请欣赏雪景的同时注意保暖和交通安全！"
+    }
+  ]
+}
