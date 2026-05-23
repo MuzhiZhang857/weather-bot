@@ -10,6 +10,7 @@
 
 天气信息：
 城市：{city_name}
+日期：{date}
 当前天气：{weather}
 温度：{temp}°C
 体感温度：{feels_like}°C

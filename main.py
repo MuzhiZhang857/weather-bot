@@ -142,6 +142,7 @@ def main():
                     
                     variables = {
                         "city_name": weather_data.city_name,
+                        "date": datetime.now(CST).strftime("%Y年%m月%d日"),
                         "weather": weather_data.now.weather if weather_data.now else "N/A",
                         "temp": weather_data.now.temp if weather_data.now else "N/A",
                         "feels_like": weather_data.now.feelsLike if weather_data.now else "N/A",
