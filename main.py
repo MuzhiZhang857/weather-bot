@@ -140,9 +140,28 @@ def main():
                     semantic_result = semantic_engine.analyze(weather_data)
                     semantic_tags = semantic_result.get("weather_tags", [])
                     
+                    def get_time_of_day():
+                        """根据当前时间（北京时间）返回时段问候"""
+                        hour = datetime.now(CST).hour
+                        if 6 <= hour < 9:
+                            return "早晨"
+                        elif 9 <= hour < 12:
+                            return "上午"
+                        elif 12 <= hour < 14:
+                            return "中午"
+                        elif 14 <= hour < 18:
+                            return "下午"
+                        elif 18 <= hour < 22:
+                            return "傍晚"
+                        else:
+                            return "晚上"
+
+                    now_cst = datetime.now(CST)
                     variables = {
                         "city_name": weather_data.city_name,
-                        "date": datetime.now(CST).strftime("%Y年%m月%d日"),
+                        "date": now_cst.strftime("%Y年%m月%d日"),
+                        "time_of_day": get_time_of_day(),
+                        "current_time": now_cst.strftime("%H:%M"),
                         "weather": weather_data.now.weather if weather_data.now else "N/A",
                         "temp": weather_data.now.temp if weather_data.now else "N/A",
                         "feels_like": weather_data.now.feelsLike if weather_data.now else "N/A",
