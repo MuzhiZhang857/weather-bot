@@ -142,19 +142,21 @@ def main():
                     
                     variables = {
                         "city_name": weather_data.city_name,
-                        "now_temp": weather_data.now.temp if weather_data.now else "N/A",
-                        "now_weather": weather_data.now.weather if weather_data.now else "N/A",
-                        "now_humidity": weather_data.now.humidity if weather_data.now else "N/A",
-                        "now_wind": f"{weather_data.now.windDir} {weather_data.now.windScale}级" if weather_data.now else "N/A",
+                        "weather": weather_data.now.weather if weather_data.now else "N/A",
+                        "temp": weather_data.now.temp if weather_data.now else "N/A",
+                        "feels_like": weather_data.now.feelsLike if weather_data.now else "N/A",
+                        "humidity": weather_data.now.humidity if weather_data.now else "N/A",
+                        "wind_dir": weather_data.now.windDir if weather_data.now else "N/A",
+                        "wind_scale": weather_data.now.windScale if weather_data.now else "N/A",
                         "tomorrow_weather": weather_data.daily.tomorrow_text_day if weather_data.daily else "N/A",
                         "tomorrow_temp_max": weather_data.daily.tomorrow_temp_max if weather_data.daily else "N/A",
                         "tomorrow_temp_min": weather_data.daily.tomorrow_temp_min if weather_data.daily else "N/A",
                         "dressing_index": weather_data.indices.dressing if weather_data.indices else "N/A",
                         "uv_index": weather_data.indices.uv if weather_data.indices else "N/A",
+                        "comfort_index": weather_data.indices.comfort if weather_data.indices else "N/A",
                         "sport_index": weather_data.indices.sport if weather_data.indices else "N/A",
                         "cold_index": weather_data.indices.cold if weather_data.indices else "N/A",
-                        "semantic_tags": "、".join(semantic_tags) if semantic_tags else "无特殊提醒",
-                        "date": datetime.now(CST).strftime("%Y年%m月%d日")
+                        "alert_tags": "、".join(semantic_tags) if semantic_tags else "无特殊提醒",
                     }
                     
                     alert_content = llm_service.generate_alert(variables)
