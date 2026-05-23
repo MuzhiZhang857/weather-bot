@@ -6,7 +6,24 @@ import uuid
 import ssl
 import requests
 import os
+import logging
 from datetime import datetime, timedelta, timezone
+from apscheduler.schedulers.background import BackgroundScheduler
+from dotenv import load_dotenv
+
+# 导入新版功能
+from services.weather_service import WeatherService
+from services.semantic_engine import SemanticEngine
+from services.llm_service import LLMService
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 # 东八区时区
 BEIJING_TZ = timezone(timedelta(hours=8))
@@ -23,6 +40,7 @@ def get_beijing_date_str():
     """获取东八区日期字符串 (YYYY-MM-DD)"""
     return get_beijing_time().strftime("%Y-%m-%d")
 
+# 配置项
 BOT_ID = os.getenv("BOT_ID", "aibq4IJma9oTpus6NeE6--WVJtJaK_0O3wN")
 SECRET = os.getenv("SECRET", "ST6Ytrm7M1BAlVOCVxuGwMKrNg7hoWR3rStapaIak9D")
 WS_URL = "wss://openws.work.weixin.qq.com"
@@ -42,109 +60,67 @@ RECONNECT_DELAY_CAP = 30
 ws_instance = None
 subscribe_timeout = None
 
+# 初始化新版服务
+weather_service = WeatherService()
+semantic_engine = SemanticEngine()
+llm_service = LLMService()
+scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
+
 def generate_req_id():
     return str(uuid.uuid4()).replace("-", "")
 
-def get_weather_now(location):
-    url = "https://mg5u9xcaf3.re.qweatherapi.com/v7/weather/now"
-    params = {"location": location, "key": HEFENG_API_KEY}
-    response = requests.get(url, params=params, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    if data.get("code") != "200":
-        raise Exception(f"和风天气API错误: {data.get('msg', '未知错误')}")
-    weather_info = data.get("now", {})
-    return {
-        "temp": weather_info.get("temp", "N/A"),
-        "feelsLike": weather_info.get("feelsLike", "N/A"),
-        "weather": weather_info.get("text", "N/A"),
-        "windDir": weather_info.get("windDir", "N/A"),
-        "windScale": weather_info.get("windScale", "N/A"),
-        "humidity": weather_info.get("humidity", "N/A"),
-    }
-
-def get_weather_7d(location):
-    url = "https://mg5u9xcaf3.re.qweatherapi.com/v7/weather/7d"
-    params = {"location": location, "key": HEFENG_API_KEY}
-    response = requests.get(url, params=params, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    if data.get("code") != "200":
-        raise Exception(f"和风天气API错误: {data.get('msg', '未知错误')}")
-    daily_list = data.get("daily", [])
-    if len(daily_list) >= 2:
-        tomorrow = daily_list[1]
-        return {
-            "tomorrow_text_day": tomorrow.get("textDay", "N/A"),
-            "tomorrow_temp_max": tomorrow.get("tempMax", "N/A"),
-            "tomorrow_temp_min": tomorrow.get("tempMin", "N/A"),
-        }
-    return {}
-
-def get_indices(location):
-    url = "https://mg5u9xcaf3.re.qweatherapi.com/v7/indices/1d"
-    params = {"location": location, "key": HEFENG_API_KEY, "type": "1,2,3,5,6,8,9"}
-    response = requests.get(url, params=params, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    if data.get("code") != "200":
-        raise Exception(f"和风天气API错误: {data.get('msg', '未知错误')}")
-    indices_list = data.get("daily", [])
-    indices_data = {}
-    for item in indices_list:
-        category = item.get("category", "")
-        if category == "穿衣指数":
-            indices_data["dressing"] = item.get("text", "N/A")
-        elif category == "紫外线指数":
-            indices_data["uv"] = item.get("text", "N/A")
-        elif category == "舒适度指数":
-            indices_data["comfort"] = item.get("text", "N/A")
-        elif category == "感冒指数":
-            indices_data["cold"] = item.get("text", "N/A")
-    return indices_data
-
-def get_clothing_advice(temp, weather, dressing_index):
+def send_weather_to_chat(ws, chat_id, chat_type, auto_reply=True):
+    """发送天气消息到聊天（使用新版 LLM）"""
     try:
-        temp = int(temp)
-    except (ValueError, TypeError):
-        return "【穿衣】建议根据天气情况适当穿衣"
+        logger.info(f"{'='*50}")
+        logger.info(f"{'[自动回复]' if auto_reply else '[定时任务]'} 开始获取天气信息...")
+        logger.info(f"{'='*50}")
+        
+        # 获取完整天气数据
+        weather_data = weather_service.get_complete_weather()
+        if not weather_data:
+            logger.error("获取天气数据失败")
+            return
+        
+        # 语义分析
+        semantic_result = semantic_engine.analyze(weather_data)
+        semantic_tags = semantic_result.get("weather_tags", [])
+        
+        # 构建 LLM 提示变量
+        weather_variables = {
+            "city_name": weather_data.city_name,
+            "now_temp": weather_data.now.temp if weather_data.now else "N/A",
+            "now_weather": weather_data.now.weather if weather_data.now else "N/A",
+            "now_humidity": weather_data.now.humidity if weather_data.now else "N/A",
+            "now_wind": f"{weather_data.now.windDir} {weather_data.now.windScale}级" if weather_data.now else "N/A",
+            "tomorrow_weather": weather_data.daily.tomorrow_text_day if weather_data.daily else "N/A",
+            "tomorrow_temp_max": weather_data.daily.tomorrow_temp_max if weather_data.daily else "N/A",
+            "tomorrow_temp_min": weather_data.daily.tomorrow_temp_min if weather_data.daily else "N/A",
+            "dressing_index": weather_data.indices.dressing if weather_data.indices else "N/A",
+            "uv_index": weather_data.indices.uv if weather_data.indices else "N/A",
+            "sport_index": weather_data.indices.sport if weather_data.indices else "N/A",
+            "cold_index": weather_data.indices.cold if weather_data.indices else "N/A",
+            "semantic_tags": "、".join(semantic_tags) if semantic_tags else "无特殊提醒",
+            "date": get_beijing_date_str()
+        }
+        
+        # 生成天气提醒
+        alert_content = llm_service.generate_alert(weather_variables)
+        if not alert_content:
+            logger.error("LLM 生成提醒失败")
+            return
+        
+        # 发送消息
+        send_message(ws, chat_id, chat_type, alert_content)
+        logger.info(f"{'[自动回复]' if auto_reply else '[定时任务]'} 天气推送完成")
+        
+    except Exception as e:
+        logger.error(f"获取天气失败: {e}", exc_info=True)
 
-    if dressing_index and dressing_index != "N/A":
-        return f"【穿衣】{dressing_index}"
-
-    if temp < 0:
-        return "【穿衣】极冷，需羽绒服、围巾、手套保暖"
-    elif temp < 10:
-        return "【穿衣】较冷，建议穿毛衣、外套"
-    elif temp < 20:
-        return "【穿衣】凉爽，适合夹克、薄毛衣"
-    elif temp < 26:
-        return "【穿衣】舒适，适合单衣或薄外套"
-    else:
-        return "【穿衣】炎热，建议穿短袖，注意防暑"
-
-def format_weather_message(weather_now, weather_7d, indices, advice):
-    date_str = get_beijing_date_str()
-    content = f"""**{date_str} {CITY_NAME}天气推送**
-
-**当前天气**: {weather_now['weather']}
-**温度**: {weather_now['temp']}°C (体感 {weather_now['feelsLike']}°C)
-**风力**: {weather_now['windDir']} {weather_now['windScale']}级
-**湿度**: {weather_now['humidity']}%
-
-**明日预报**: {weather_7d.get('tomorrow_text_day', 'N/A')}
-**温度**: {weather_7d.get('tomorrow_temp_min', 'N/A')}~{weather_7d.get('tomorrow_temp_max', 'N/A')}°C
-
-{advice}
-
-**紫外线指数**: {indices.get('uv', 'N/A')}
-**舒适度指数**: {indices.get('comfort', 'N/A')}
-**感冒指数**: {indices.get('cold', 'N/A')}"""
-    return content
-
-def send_message(ws, chatid, chat_type, content):
+def send_message(ws, chat_id, chat_type, content):
+    """发送消息到企业微信"""
     if not ws or not ws.sock or not ws.sock.connected:
-        print(f"[{format_beijing_time()}] WebSocket未连接，无法发送消息")
+        logger.error("WebSocket 未连接，无法发送消息")
         return False
     
     req_id = generate_req_id()
@@ -154,7 +130,7 @@ def send_message(ws, chatid, chat_type, content):
             "req_id": req_id
         },
         "body": {
-            "chatid": chatid,
+            "chatid": chat_id,
             "chat_type": chat_type,
             "msgtype": "markdown",
             "markdown": {
@@ -165,51 +141,28 @@ def send_message(ws, chatid, chat_type, content):
     
     try:
         ws.send(json.dumps(message))
-        print(f"[{format_beijing_time()}] 发送消息: req_id={req_id}")
+        logger.info(f"发送消息成功: req_id={req_id}")
         return True
     except Exception as e:
-        print(f"[{format_beijing_time()}] 发送消息失败: {e}")
+        logger.error(f"发送消息失败: {e}")
         return False
-
-def send_weather_to_chat(ws, chatid, chat_type):
-    print(f"\n{'='*50}")
-    print(f"[定时任务] 开始获取天气信息...")
-    print(f"{'='*50}")
-    
-    try:
-        weather_now = get_weather_now(CITY_ID)
-        print(f"  当前天气: {weather_now['weather']}, 温度: {weather_now['temp']}°C")
-        
-        weather_7d = get_weather_7d(CITY_ID)
-        print(f"  明日天气: {weather_7d.get('tomorrow_text_day', 'N/A')}")
-        
-        indices = get_indices(CITY_ID)
-        advice = get_clothing_advice(weather_now["temp"], weather_now["weather"], indices.get("dressing"))
-        
-        content = format_weather_message(weather_now, weather_7d, indices, advice)
-        
-        send_message(ws, chatid, chat_type, content)
-        print(f"[定时任务] 天气推送完成")
-        
-    except Exception as e:
-        print(f"[定时任务] 获取天气失败: {e}")
 
 def on_open(ws):
     global ws_instance, subscribe_timeout
     ws_instance = ws
-    print(f"[{format_beijing_time()}] WebSocket 连接已建立")
+    logger.info(f"[{format_beijing_time()}] WebSocket 连接已建立")
     
-    def check_subscribe_timeout():
+    def on_subscribe_timeout():
         global ws_instance
-        print(f"[{format_beijing_time()}] 订阅超时，强制断开连接重连")
+        logger.warning(f"[{format_beijing_time()}] 订阅超时，强制断开连接重连")
         if ws_instance and ws_instance.sock and ws_instance.sock.connected:
             ws_instance.close()
     
-    subscribe_timeout = threading.Timer(30, check_subscribe_timeout)
+    subscribe_timeout = threading.Timer(30, on_subscribe_timeout)
     subscribe_timeout.start()
     
     send_subscribe(ws)
-    
+
 def send_subscribe(ws):
     req_id = generate_req_id()
     subscribe_msg = {
@@ -225,32 +178,31 @@ def send_subscribe(ws):
     }
     try:
         ws.send(json.dumps(subscribe_msg))
-        print(f"[{format_beijing_time()}] 发送订阅请求: req_id={req_id}")
-        print(f"[{format_beijing_time()}] 等待订阅响应...")
+        logger.info(f"[{format_beijing_time()}] 发送订阅请求: req_id={req_id}")
     except Exception as e:
-        print(f"[{format_beijing_time()}] 发送订阅请求失败: {e}")
+        logger.error(f"发送订阅请求失败: {e}")
 
 def handle_user_message(ws, body):
     msgtype = body.get('msgtype', '')
-    chattype = body.get('chattype', '')
-    chatid = body.get('chatid', '')
+    chat_type = body.get('chattype', '')
+    chat_id = body.get('chatid', '')
     from_user = body.get('from', {}).get('userid', '')
     
-    print(f"\n{'='*50}")
-    print(f"[新消息] 收到用户消息")
-    print(f"{'='*50}")
-    print(f"发送者: {from_user}")
-    print(f"会话类型: {'群聊' if chattype == 'group' else '单聊'}")
-    print(f"会话ID: {chatid}")
-    print(f"消息类型: {msgtype}")
+    logger.info(f"\n{'='*50}")
+    logger.info(f"[新消息] 收到用户消息")
+    logger.info(f"{'='*50}")
+    logger.info(f"发送者: {from_user}")
+    logger.info(f"会话类型: {'群聊' if chat_type == 'group' else '单聊'}")
+    logger.info(f"会话ID: {chat_id}")
+    logger.info(f"消息类型: {msgtype}")
     
     if msgtype == 'text':
         content = body.get('text', {}).get('content', '')
-        print(f"内容: {content}")
+        logger.info(f"内容: {content}")
         
         if '天气' in content or '天气预报' in content:
-            print(f"[自动回复] 检测到天气关键词，发送天气信息...")
-            send_weather_to_chat(ws, chatid, 2 if chattype == 'group' else 1)
+            logger.info(f"[自动回复] 检测到天气关键词，发送天气信息...")
+            send_weather_to_chat(ws, chat_id, 2 if chat_type == 'group' else 1, auto_reply=True)
         
         return content
     elif msgtype == 'mixed':
@@ -258,171 +210,134 @@ def handle_user_message(ws, body):
         for item in msg_items:
             if item.get('msgtype') == 'text':
                 text_content = item.get('text', {}).get('content', '')
-                print(f"内容: {text_content}")
+                logger.info(f"内容: {text_content}")
                 if '天气' in text_content:
-                    print(f"[自动回复] 检测到天气关键词，发送天气信息...")
-                    send_weather_to_chat(ws, chatid, 2 if chattype == 'group' else 1)
+                    logger.info(f"[自动回复] 检测到天气关键词，发送天气信息...")
+                    send_weather_to_chat(ws, chat_id, 2 if chat_type == 'group' else 1, auto_reply=True)
         return "[混合消息]"
     else:
-        print(f"其他消息类型: {msgtype}")
+        logger.info(f"其他消息类型: {msgtype}")
         return f"[{msgtype}消息]"
 
 def on_message(ws, message):
     global subscribe_timeout
     try:
         data = json.loads(message)
+        cmd = data.get('cmd', '')
         req_id = data.get('headers', {}).get('req_id', 'N/A')
         
-        if data.get('errcode') == 0:
-            print(f"\n[{format_beijing_time()}] 收到消息:")
-            print(f"    req_id: {req_id}")
-            print(f"    状态: 成功 (ok)")
-            
+        if cmd == 'ping':
+            # 响应心跳
+            pong_msg = {
+                "cmd": "pong",
+                "headers": {
+                    "req_id": req_id
+                }
+            }
+            ws.send(json.dumps(pong_msg))
+        elif cmd == 'aibot_msg_callback':
+            # 处理用户消息
+            handle_user_message(ws, data.get('body', {}))
+        elif data.get('errcode') == 0:
+            logger.info(f"[{format_beijing_time()}] 收到消息: req_id={req_id}, 状态: 成功")
+            # 订阅成功，取消超时定时器
             if subscribe_timeout:
                 subscribe_timeout.cancel()
                 subscribe_timeout = None
-                print(f"    订阅成功，取消超时定时器")
-                
-        elif data.get('errcode') != 0:
-            print(f"\n[{format_beijing_time()}] 收到消息:")
-            print(f"    req_id: {req_id}")
-            print(f"    错误码: {data.get('errcode')}")
-            print(f"    错误信息: {data.get('errmsg', '未知错误')}")
-            
-            if data.get('errcode') in [40001, 40002, 40003]:
-                print(f"    ⚠️ 凭证错误，请检查 Bot ID 和 Secret")
-            
-        cmd = data.get('cmd', '')
-        if cmd == 'aibot_msg_callback':
-            body = data.get('body', {})
-            handle_user_message(ws, body)
-            
-        elif cmd == 'aibot_event_callback':
-            event_type = data.get('body', {}).get('event', {}).get('type', '')
-            print(f"    收到事件: {event_type}")
-            
-        elif cmd == 'pong':
-            print(f"    Pong响应: req_id={req_id}")
-            
-        print(f"    原始数据: {json.dumps(data, ensure_ascii=False)}")
-            
+                logger.info("订阅成功，取消超时定时器")
+        else:
+            logger.error(f"[{format_beijing_time()}] 收到消息: req_id={req_id}, 错误码: {data.get('errcode')}, 错误信息: {data.get('errmsg')}")
     except json.JSONDecodeError:
-        print(f"[{format_beijing_time()}] 收到非JSON消息: {message[:200]}...")
+        logger.error(f"收到非 JSON 消息: {message[:100]}...")
+    except Exception as e:
+        logger.error(f"处理消息失败: {e}", exc_info=True)
 
 def on_error(ws, error):
-    print(f"[{format_beijing_time()}] 错误: {error}")
+    logger.error(f"WebSocket 错误: {error}")
 
 def on_close(ws, close_status_code, close_msg):
     global ws_instance
+    logger.info(f"[{format_beijing_time()}] WebSocket 连接已关闭: status_code={close_status_code}, message={close_msg}")
     ws_instance = None
-    print(f"[{format_beijing_time()}] WebSocket 连接已关闭")
-    print(f"    状态码: {close_status_code}")
-    print(f"    原因: {close_msg}")
-
-def send_heartbeat(ws):
-    while True:
-        try:
-            if ws.sock and ws.sock.connected:
-                req_id = generate_req_id()
-                heartbeat = {
-                    "cmd": "ping",
-                    "headers": {
-                        "req_id": req_id
-                    }
-                }
-                ws.send(json.dumps(heartbeat))
-            time.sleep(30)
-        except Exception as e:
-            print(f"[{format_beijing_time()}] 心跳发送失败: {e}")
-            break
-
-def schedule_task(ws):
-    def job():
-        if ws and ws.sock and ws.sock.connected:
-            send_weather_to_chat(ws, SCHEDULE_CHAT_ID, SCHEDULE_CHAT_TYPE)
     
-    # 自定义 schedule 检查，确保使用东八区时间
-    def custom_scheduler():
-        print(f"[定时任务] 已设置每天 {SCHEDULE_TIME} (北京时间) 推送天气到群聊")
-        
-        last_executed_date = None
-        
-        while True:
+    # 尝试重连
+    def reconnect():
+        attempt = 0
+        while attempt < MAX_RECONNECT_ATTEMPTS:
+            attempt += 1
+            delay = min(RECONNECT_DELAY_BASE * (2 ** (attempt - 1)), RECONNECT_DELAY_CAP)
+            logger.info(f"[{format_beijing_time()}] 尝试重连 (第 {attempt}/{MAX_RECONNECT_ATTEMPTS} 次)，等待 {delay} 秒...")
+            time.sleep(delay)
+            
             try:
-                # 获取当前东八区时间
-                now = get_beijing_time()
-                current_time_str = now.strftime("%H:%M")
-                current_date_str = now.strftime("%Y-%m-%d")
-                
-                # 检查是否到达目标时间，且当天未执行过
-                if current_time_str == SCHEDULE_TIME and current_date_str != last_executed_date:
-                    print(f"[{format_beijing_time()}] 定时任务触发，开始推送天气")
-                    if ws and ws.sock and ws.sock.connected:
-                        send_weather_to_chat(ws, SCHEDULE_CHAT_ID, SCHEDULE_CHAT_TYPE)
-                    last_executed_date = current_date_str
-                
-                time.sleep(30)
+                start_ws()
+                return
             except Exception as e:
-                print(f"[定时任务] 发生错误: {e}")
-                time.sleep(60)
+                logger.error(f"重连失败: {e}")
     
-    custom_scheduler()
+    threading.Thread(target=reconnect, daemon=True).start()
 
-def connect_with_reconnect():
-    reconnect_count = 0
+def start_ws():
+    """启动 WebSocket 连接"""
+    ws = websocket.WebSocketApp(
+        WS_URL,
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close
+    )
     
-    while reconnect_count < MAX_RECONNECT_ATTEMPTS:
-        try:
-            print(f"\n{'='*60}")
-            print(f"企业微信天气机器人启动")
-            print(f"Bot ID: {BOT_ID}")
-            print(f"定时推送: 每天 {SCHEDULE_TIME} (北京时间)")
-            print(f"推送目标: {SCHEDULE_CHAT_ID}")
-            print(f"{'='*60}")
-            print(f"[{format_beijing_time()}] 正在连接 WebSocket (第 {reconnect_count + 1} 次尝试)...")
-            
-            ws = websocket.WebSocketApp(
-                WS_URL,
-                on_open=on_open,
-                on_message=on_message,
-                on_error=on_error,
-                on_close=on_close
-            )
-            
-            heartbeat_thread = threading.Thread(target=send_heartbeat, args=(ws,), daemon=True)
-            heartbeat_thread.start()
-            
-            schedule_thread = threading.Thread(target=schedule_task, args=(ws,), daemon=True)
-            schedule_thread.start()
-            
-            ws.run_forever(
-                sslopt={"cert_reqs": ssl.CERT_NONE},
-                ping_interval=0,
-                ping_timeout=99999,
-                suppress_origin=True
-            )
-            
-            reconnect_count += 1
-            if reconnect_count < MAX_RECONNECT_ATTEMPTS:
-                delay = min(RECONNECT_DELAY_BASE * (2 ** (reconnect_count - 1)), RECONNECT_DELAY_CAP)
-                print(f"[{format_beijing_time()}] 连接断开，{delay}秒后尝试重新连接...")
-                time.sleep(delay)
-            
-        except KeyboardInterrupt:
-            print("\n用户中断，退出程序")
-            return
-        except Exception as e:
-            print(f"[{format_beijing_time()}] 连接失败: {e}")
-            reconnect_count += 1
-            if reconnect_count < MAX_RECONNECT_ATTEMPTS:
-                delay = min(RECONNECT_DELAY_BASE * (2 ** (reconnect_count - 1)), RECONNECT_DELAY_CAP)
-                print(f"[{format_beijing_time()}] {delay}秒后尝试重新连接...")
-                time.sleep(delay)
+    ws.run_forever(
+        sslopt={"cert_reqs": ssl.CERT_NONE},
+        ping_interval=0,
+        ping_timeout=99999,
+        suppress_origin=True
+    )
+
+def scheduled_weather_push():
+    """定时推送天气"""
+    logger.info(f"{'='*50}")
+    logger.info(f"[定时任务] 开始执行天气推送")
+    logger.info(f"{'='*50}")
     
-    print(f"\n[{format_beijing_time()}] 已达到最大重连次数 ({MAX_RECONNECT_ATTEMPTS})，退出程序")
+    if ws_instance and ws_instance.sock and ws_instance.sock.connected:
+        send_weather_to_chat(ws_instance, SCHEDULE_CHAT_ID, SCHEDULE_CHAT_TYPE, auto_reply=False)
+    else:
+        logger.warning("WebSocket 未连接，无法执行定时推送")
+
+def main():
+    print(f"\n{'='*60}")
+    print("企业微信天气机器人 (整合版)")
+    print(f"Bot ID: {BOT_ID[:20]}...")
+    print(f"定时推送: 每天 {SCHEDULE_TIME} (北京时间)")
+    print(f"推送目标: {SCHEDULE_CHAT_ID[:20]}...")
+    print(f"{'='*60}\n")
+    
+    # 配置定时任务
+    try:
+        hour, minute = map(int, SCHEDULE_TIME.split(':'))
+        scheduler.add_job(
+            scheduled_weather_push,
+            'cron',
+            hour=hour,
+            minute=minute,
+            timezone='Asia/Shanghai'
+        )
+        scheduler.start()
+        logger.info(f"定时任务已设置: 每天 {SCHEDULE_TIME} 推送天气")
+    except Exception as e:
+        logger.error(f"设置定时任务失败: {e}", exc_info=True)
+    
+    # 启动 WebSocket
+    try:
+        start_ws()
+    except KeyboardInterrupt:
+        logger.info("收到停止信号")
+    except Exception as e:
+        logger.error(f"WebSocket 启动失败: {e}", exc_info=True)
+    finally:
+        if scheduler.running:
+            scheduler.shutdown()
 
 if __name__ == "__main__":
-    try:
-        connect_with_reconnect()
-    except KeyboardInterrupt:
-        print("\n用户中断，退出程序")
+    main()
