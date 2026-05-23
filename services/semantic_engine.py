@@ -88,6 +88,30 @@ class SemanticEngine:
                 data = json.load(f)
                 rules_from_file = data.get('rules', [])
                 logger.info(f"从 {'默认' if is_default else '用户'} 配置加载 {len(rules_from_file)} 条规则")
+                
+                for rule_data in rules_from_file:
+                    rule_id = rule_data.get('rule_id', '')
+                    tag = rule_data.get('name', '')
+                    enabled = rule_data.get('enabled', True)
+                    conditions = rule_data.get('conditions', {})
+                    
+                    if not rule_id or not tag:
+                        continue
+                    
+                    condition_type = next(iter(conditions.keys()), None)
+                    if condition_type:
+                        value = conditions[condition_type]
+                        condition = {"type": condition_type, "value": value}
+                        
+                        semantic_rule = SemanticRule(
+                            rule_id=rule_id,
+                            tag=tag,
+                            condition=condition,
+                            enabled=enabled
+                        )
+                        self.rules.append(semantic_rule)
+                        logger.debug(f"添加规则: {rule_id} -> {tag}")
+                        
         except Exception as e:
             logger.error(f"加载规则文件失败 {file_path}: {str(e)}")
 
@@ -107,7 +131,9 @@ class SemanticEngine:
             'humidity': None,
             'wind_scale': None,
             'weather_text': None,
-            'weather_text_day': None
+            'weather_text_day': None,
+            'uv_index': None,
+            'cold_index': None
         }
 
         if weather_data.now:
@@ -121,6 +147,10 @@ class SemanticEngine:
             params['temp_max'] = self._parse_numeric(today.tempMax)
             params['temp_min'] = self._parse_numeric(today.tempMin)
             params['weather_text_day'] = today.textDay
+
+        if weather_data.indices:
+            params['uv_index'] = weather_data.indices.uv
+            params['cold_index'] = weather_data.indices.cold
 
         logger.debug(f"提取的天气参数: {params}")
         return params
@@ -175,12 +205,32 @@ class SemanticEngine:
                 return result
 
         elif condition_type == 'weather_includes':
-            keywords = condition.get('keywords', [])
+            keywords = condition.get('value', [])
+            if not isinstance(keywords, list):
+                keywords = condition.get('keywords', [])
             weather_text = params.get('weather_text') or params.get('weather_text_day', '')
             if weather_text:
                 for keyword in keywords:
                     if keyword in weather_text:
                         logger.debug(f"规则 {rule.rule_id}: 天气文本 '{weather_text}' 包含 '{keyword}'")
+                        return True
+
+        elif condition_type == 'uv_index_includes':
+            keywords = condition.get('value', [])
+            uv_index = params.get('uv_index', '')
+            if uv_index:
+                for keyword in keywords:
+                    if keyword in uv_index:
+                        logger.debug(f"规则 {rule.rule_id}: 紫外线指数 '{uv_index}' 包含 '{keyword}'")
+                        return True
+
+        elif condition_type == 'cold_index_includes':
+            keywords = condition.get('value', [])
+            cold_index = params.get('cold_index', '')
+            if cold_index:
+                for keyword in keywords:
+                    if keyword in cold_index:
+                        logger.debug(f"规则 {rule.rule_id}: 感冒指数 '{cold_index}' 包含 '{keyword}'")
                         return True
 
         return False
