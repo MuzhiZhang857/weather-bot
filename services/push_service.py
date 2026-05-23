@@ -223,10 +223,6 @@ class PushService:
     def disconnect(self) -> None:
         logger.info("开始断开 WebSocket 连接")
 
-        self._heartbeat_stop_event.set()
-        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
-            self._heartbeat_thread.join(timeout=5)
-
         if self._subscribe_timeout_timer:
             self._subscribe_timeout_timer.cancel()
             self._subscribe_timeout_timer = None
@@ -241,32 +237,9 @@ class PushService:
         logger.info("WebSocket 连接已断开")
 
     def _start_heartbeat(self) -> None:
-        self._heartbeat_stop_event.clear()
-        self._heartbeat_thread = threading.Thread(
-            target=self._heartbeat_loop,
-            daemon=True,
-        )
-        self._heartbeat_thread.start()
-        logger.info("心跳保活已启动")
-
-    def _heartbeat_loop(self) -> None:
-        while not self._heartbeat_stop_event.is_set():
-            try:
-                if self.ws and self.ws.sock and self.ws.sock.connected:
-                    req_id = self._generate_req_id()
-                    heartbeat = {
-                        "cmd": "ping",
-                        "headers": {
-                            "req_id": req_id
-                        }
-                    }
-                    self.ws.send(json.dumps(heartbeat))
-                    logger.debug(f"发送心跳: req_id={req_id}")
-            except Exception as e:
-                logger.error(f"心跳发送失败: {str(e)}")
-
-            if self._heartbeat_stop_event.wait(self.config.heartbeat_interval):
-                break
+        # 不主动发送心跳，只响应服务器的 ping
+        # 参考 qywx_websocket.py 的实现方式
+        logger.debug("心跳机制：仅响应服务器 Ping")
 
     def _on_open(self, ws: websocket.WebSocketApp) -> None:
         logger.info("WebSocket 连接已打开")
@@ -278,6 +251,22 @@ class PushService:
         try:
             data = json.loads(message)
             req_id = data.get('headers', {}).get('req_id', 'N/A')
+            cmd = data.get('cmd', '')
+
+            if cmd == 'ping':
+                # 响应心跳 - 关键修复！
+                pong_msg = {
+                    "cmd": "pong",
+                    "headers": {
+                        "req_id": req_id
+                    }
+                }
+                try:
+                    ws.send(json.dumps(pong_msg))
+                    logger.debug(f"收到 Ping，响应 Pong: req_id={req_id}")
+                except Exception as e:
+                    logger.error(f"发送 Pong 响应失败: {str(e)}")
+                return
 
             if data.get('errcode') == 0:
                 logger.debug(f"收到成功响应: req_id={req_id}")
@@ -291,7 +280,6 @@ class PushService:
                 if data.get('errcode') in [40001, 40002, 40003]:
                     logger.error("凭证错误，请检查 Bot ID 和 Secret")
 
-            cmd = data.get('cmd', '')
             if cmd == 'aibot_msg_callback':
                 body = data.get('body', {})
                 if self._message_callback:
