@@ -11,8 +11,11 @@ import logging
 import argparse
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta
 
 load_dotenv()
+
+CST = timezone(timedelta(hours=8))
 
 
 def setup_logging():
@@ -26,6 +29,15 @@ def setup_logging():
     if logger.handlers:
         logger.handlers.clear()
     
+    class CSTFormatter(logging.Formatter):
+        def formatTime(self, record, datefmt=None):
+            dt = datetime.fromtimestamp(record.created, tz=CST)
+            if datefmt:
+                s = dt.strftime(datefmt)
+            else:
+                s = dt.isoformat(timespec='milliseconds')
+            return s
+    
     file_handler = RotatingFileHandler(
         os.path.join(log_dir, "weather_bot.log"),
         maxBytes=10 * 1024 * 1024,
@@ -33,7 +45,7 @@ def setup_logging():
         encoding="utf-8"
     )
     file_handler.setLevel(logging.INFO)
-    file_formatter = logging.Formatter(
+    file_formatter = CSTFormatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
@@ -41,7 +53,7 @@ def setup_logging():
     
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter(
+    console_formatter = CSTFormatter(
         "%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )

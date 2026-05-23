@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Dict, Any
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 from services.weather_service import WeatherService
@@ -12,6 +12,8 @@ from services.llm_service import LLMService
 from services.push_service import PushService, PushMessage, ChatType
 
 load_dotenv()
+
+CST = timezone(timedelta(hours=8))
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ class WeatherScheduler:
             "sport_index": weather_data.indices.sport if weather_data.indices else "N/A",
             "cold_index": weather_data.indices.cold if weather_data.indices else "N/A",
             "semantic_tags": "、".join(semantic_tags) if semantic_tags else "无特殊提醒",
-            "date": datetime.now().strftime("%Y年%m月%d日")
+            "date": datetime.now(CST).strftime("%Y年%m月%d日")
         }
         return variables
     
