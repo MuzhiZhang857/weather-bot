@@ -26,7 +26,7 @@ class PushMessage:
     chat_id: str
     chat_type: ChatType
     content: str
-    msgtype: str = "markdown"
+    msgtype: str = "markdown"  # 恢复为 markdown 格式，与旧版一致
 
 
 @dataclass
@@ -103,8 +103,8 @@ class PushService:
 
                 start_time = time.time()
                 while time.time() - start_time < self.config.connect_timeout:
-                    if self._connected:
-                        logger.info("WebSocket 连接成功建立")
+                    if self._connected and self._subscribed:
+                        logger.info("WebSocket 连接成功建立且已订阅")
                         return True
                     time.sleep(0.1)
 
@@ -170,11 +170,20 @@ class PushService:
             return False
 
     def send_message(self, message: PushMessage) -> bool:
-        if not self._connected or not self.ws or not self.ws.sock or not self.ws.sock.connected:
+        # 检查连接状态和订阅状态
+        if not self._connected:
             logger.error("WebSocket 未连接，无法发送消息")
+            return False
+        if not self._subscribed:
+            logger.error("WebSocket 未订阅，无法发送消息")
+            return False
+        if not self.ws or not self.ws.sock or not self.ws.sock.connected:
+            logger.error("WebSocket socket 未连接，无法发送消息")
             return False
 
         req_id = self._generate_req_id()
+        
+        # 使用与旧版一致的消息格式
         ws_message = {
             "cmd": "aibot_send_msg",
             "headers": {
@@ -183,12 +192,16 @@ class PushService:
             "body": {
                 "chatid": message.chat_id,
                 "chat_type": message.chat_type.value,
-                "msgtype": message.msgtype,
+                "msgtype": "markdown",  # 强制使用 markdown 格式
                 "markdown": {
                     "content": message.content
                 }
             }
         }
+
+        # 打印调试日志
+        logger.info(f"准备发送消息: chat_id={message.chat_id}, chat_type={message.chat_type.value}")
+        logger.info(f"消息内容预览: {message.content[:50]}...")
 
         attempt = 0
         while attempt < self.config.max_retry_attempts:
