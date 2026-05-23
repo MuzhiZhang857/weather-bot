@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import threading
 
 # 在导入任何其他模块前，先清除所有代理环境变量！
 os.environ.pop("HTTP_PROXY", None)
@@ -72,24 +74,130 @@ def main():
         "--mode",
         type=str,
         default="scheduled",
-        choices=["scheduled", "once"],
-        help="运行模式: scheduled (定时运行) 或 once (单次运行)"
+        choices=["scheduled", "once", "listen", "both"],
+        help="运行模式: scheduled (定时运行), once (单次运行), listen (消息监听), both (定时+监听)"
     )
     
     args = parser.parse_args()
     
     try:
-        from services.scheduler import WeatherScheduler
-        
-        scheduler = WeatherScheduler()
-        
-        if args.mode == "once":
-            logger.info("运行模式: 单次执行")
-            scheduler.run_once()
-        else:
-            logger.info("运行模式: 定时执行")
-            scheduler.start_scheduled()
+        if args.mode in ["listen", "both"]:
+            from services.push_service import PushService, PushMessage, ChatType
+            from services.weather_service import WeatherService
+            from services.semantic_engine import SemanticEngine
+            from services.llm_service import LLMService
             
+            logger.info(f"启动消息监听模式: {args.mode}")
+            
+            push_service = PushService()
+            weather_service = WeatherService()
+            semantic_engine = SemanticEngine()
+            llm_service = LLMService()
+            
+            chat_id = os.getenv("SCHEDULE_CHAT_ID", "")
+            chat_type = ChatType(int(os.getenv("SCHEDULE_CHAT_TYPE", "2")))
+            
+            def handle_message(message_body):
+                """处理收到的 @ 消息"""
+                try:
+                    logger.info(f"收到消息: {message_body}")
+                    
+                    content = message_body.get("content", "")
+                    if not content:
+                        logger.warning("消息内容为空")
+                        return
+                    
+                    weather_data = weather_service.get_complete_weather()
+                    if not weather_data:
+                        reply = "抱歉，获取天气信息失败，请稍后重试。"
+                        push_service.send_message(PushMessage(
+                            chat_id=chat_id,
+                            chat_type=chat_type,
+                            content=reply
+                        ))
+                        return
+                    
+                    semantic_result = semantic_engine.analyze(weather_data)
+                    semantic_tags = semantic_result.get("weather_tags", [])
+                    
+                    variables = {
+                        "city_name": weather_data.city_name,
+                        "now_temp": weather_data.now.temp if weather_data.now else "N/A",
+                        "now_weather": weather_data.now.weather if weather_data.now else "N/A",
+                        "now_humidity": weather_data.now.humidity if weather_data.now else "N/A",
+                        "now_wind": f"{weather_data.now.windDir} {weather_data.now.windScale}级" if weather_data.now else "N/A",
+                        "tomorrow_weather": weather_data.daily.tomorrow_text_day if weather_data.daily else "N/A",
+                        "tomorrow_temp_max": weather_data.daily.tomorrow_temp_max if weather_data.daily else "N/A",
+                        "tomorrow_temp_min": weather_data.daily.tomorrow_temp_min if weather_data.daily else "N/A",
+                        "dressing_index": weather_data.indices.dressing if weather_data.indices else "N/A",
+                        "uv_index": weather_data.indices.uv if weather_data.indices else "N/A",
+                        "sport_index": weather_data.indices.sport if weather_data.indices else "N/A",
+                        "cold_index": weather_data.indices.cold if weather_data.indices else "N/A",
+                        "semantic_tags": "、".join(semantic_tags) if semantic_tags else "无特殊提醒",
+                        "date": datetime.now(CST).strftime("%Y年%m月%d日")
+                    }
+                    
+                    alert_content = llm_service.generate_alert(variables)
+                    if alert_content:
+                        push_service.send_message(PushMessage(
+                            chat_id=chat_id,
+                            chat_type=chat_type,
+                            content=alert_content
+                        ))
+                        logger.info("消息回复已发送")
+                    else:
+                        reply = "抱歉，生成天气提醒失败，请稍后重试。"
+                        push_service.send_message(PushMessage(
+                            chat_id=chat_id,
+                            chat_type=chat_type,
+                            content=reply
+                        ))
+                        
+                except Exception as e:
+                    logger.error(f"处理消息时出错: {str(e)}", exc_info=True)
+                    try:
+                        reply = f"处理消息时出错: {str(e)}"
+                        push_service.send_message(PushMessage(
+                            chat_id=chat_id,
+                            chat_type=chat_type,
+                            content=reply
+                        ))
+                    except:
+                        pass
+            
+            push_service.set_message_callback(handle_message)
+            
+            if push_service.connect_websocket():
+                logger.info("WebSocket 连接成功，进入消息监听模式")
+                
+                if args.mode == "both":
+                    from services.scheduler import WeatherScheduler
+                    scheduler = WeatherScheduler()
+                    scheduler_thread = threading.Thread(
+                        target=scheduler.start_scheduled,
+                        daemon=True
+                    )
+                    scheduler_thread.start()
+                    logger.info("定时推送任务已在后台启动")
+                
+                while True:
+                    time.sleep(1)
+            else:
+                logger.error("WebSocket 连接失败，无法进入消息监听模式")
+                sys.exit(1)
+        
+        else:
+            from services.scheduler import WeatherScheduler
+            
+            scheduler = WeatherScheduler()
+            
+            if args.mode == "once":
+                logger.info("运行模式: 单次执行")
+                scheduler.run_once()
+            else:
+                logger.info("运行模式: 定时执行")
+                scheduler.start_scheduled()
+                
     except ImportError as e:
         logger.error(f"导入模块失败: {str(e)}")
         sys.exit(1)
