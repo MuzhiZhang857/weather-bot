@@ -97,24 +97,44 @@ def main():
             chat_id = os.getenv("SCHEDULE_CHAT_ID", "")
             chat_type = ChatType(int(os.getenv("SCHEDULE_CHAT_TYPE", "2")))
             
+            def send_via_response_url(response_url: str, content: str):
+                """通过 response_url 发送回复（企业微信 webhook 模式）"""
+                try:
+                    import requests
+                    payload = {
+                        "msgtype": "markdown",
+                        "markdown": {
+                            "content": content
+                        }
+                    }
+                    response = requests.post(response_url, json=payload, timeout=10)
+                    if response.status_code == 200:
+                        logger.info("通过 response_url 发送回复成功")
+                    else:
+                        logger.error(f"通过 response_url 发送回复失败: {response.status_code} - {response.text}")
+                except Exception as e:
+                    logger.error(f"通过 response_url 发送回复出错: {str(e)}")
+            
             def handle_message(message_body):
                 """处理收到的 @ 消息"""
                 try:
                     logger.info(f"收到消息: {message_body}")
                     
-                    content = message_body.get("content", "")
-                    if not content:
-                        logger.warning("消息内容为空")
+                    content = message_body.get("text", {}).get("content", "").strip()
+                    response_url = message_body.get("response_url", "")
+                    
+                    if not content and not response_url:
+                        logger.warning("消息内容为空且无 response_url")
+                        return
+                    
+                    if not response_url:
+                        logger.warning("缺少 response_url，无法发送回复")
                         return
                     
                     weather_data = weather_service.get_complete_weather()
                     if not weather_data:
                         reply = "抱歉，获取天气信息失败，请稍后重试。"
-                        push_service.send_message(PushMessage(
-                            chat_id=chat_id,
-                            chat_type=chat_type,
-                            content=reply
-                        ))
+                        send_via_response_url(response_url, reply)
                         return
                     
                     semantic_result = semantic_engine.analyze(weather_data)
@@ -139,29 +159,17 @@ def main():
                     
                     alert_content = llm_service.generate_alert(variables)
                     if alert_content:
-                        push_service.send_message(PushMessage(
-                            chat_id=chat_id,
-                            chat_type=chat_type,
-                            content=alert_content
-                        ))
+                        send_via_response_url(response_url, alert_content)
                         logger.info("消息回复已发送")
                     else:
                         reply = "抱歉，生成天气提醒失败，请稍后重试。"
-                        push_service.send_message(PushMessage(
-                            chat_id=chat_id,
-                            chat_type=chat_type,
-                            content=reply
-                        ))
+                        send_via_response_url(response_url, reply)
                         
                 except Exception as e:
                     logger.error(f"处理消息时出错: {str(e)}", exc_info=True)
                     try:
-                        reply = f"处理消息时出错: {str(e)}"
-                        push_service.send_message(PushMessage(
-                            chat_id=chat_id,
-                            chat_type=chat_type,
-                            content=reply
-                        ))
+                        if response_url:
+                            send_via_response_url(response_url, f"处理消息时出错: {str(e)}")
                     except:
                         pass
             
