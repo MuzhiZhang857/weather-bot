@@ -3,8 +3,9 @@ import logging
 from typing import Optional, List, Dict, Any
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
 
 from services.weather_service import WeatherService
 from services.semantic_engine import SemanticEngine
@@ -13,7 +14,7 @@ from services.push_service import PushService, PushMessage, ChatType
 
 load_dotenv()
 
-CST = timezone(timedelta(hours=8))
+SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +30,12 @@ class WeatherScheduler:
         self.chat_type = ChatType(int(os.getenv("SCHEDULE_CHAT_TYPE", "2")))
         self.schedule_time = os.getenv("SCHEDULE_TIME", "08:00")
         
-        self.scheduler = BlockingScheduler()
+        self.scheduler = BlockingScheduler(timezone=SHANGHAI_TZ)
         logger.info("WeatherScheduler 初始化完成")
     
     def _get_time_of_day(self) -> str:
         """根据当前时间（北京时间）返回时段问候"""
-        hour = datetime.now(CST).hour
+        hour = datetime.now(SHANGHAI_TZ).hour
         if 6 <= hour < 9:
             return "早晨"
         elif 9 <= hour < 12:
@@ -49,12 +50,12 @@ class WeatherScheduler:
             return "晚上"
 
     def _build_weather_variables(self, weather_data, semantic_tags: List[str]) -> Dict[str, str]:
-        now_cst = datetime.now(CST)
+        now_shanghai = datetime.now(SHANGHAI_TZ)
         variables = {
             "city_name": weather_data.city_name,
-            "date": now_cst.strftime("%Y年%m月%d日"),
+            "date": now_shanghai.strftime("%Y年%m月%d日"),
             "time_of_day": self._get_time_of_day(),
-            "current_time": now_cst.strftime("%H:%M"),
+            "current_time": now_shanghai.strftime("%H:%M"),
             "weather": weather_data.now.weather if weather_data.now else "N/A",
             "temp": weather_data.now.temp if weather_data.now else "N/A",
             "feels_like": weather_data.now.feelsLike if weather_data.now else "N/A",
@@ -129,7 +130,8 @@ class WeatherScheduler:
             self.execute_workflow,
             trigger=CronTrigger(
                 hour=schedule_config["hour"],
-                minute=schedule_config["minute"]
+                minute=schedule_config["minute"],
+                timezone=SHANGHAI_TZ
             ),
             id="weather_push_job",
             name="每日天气推送",
