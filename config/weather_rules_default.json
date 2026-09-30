@@ -14,6 +14,28 @@
       "message_template": "⚠️ 注意！今天有{weather}，请记得带伞，注意出行安全！"
     },
     {
+      "rule_id": "snow_alert",
+      "name": "降雪预警",
+      "description": "检测到降雪天气时发出提醒",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "weather_includes": ["雪", "小雪", "中雪", "大雪", "暴雪"]
+      },
+      "message_template": "❄️ 注意！今天有{weather}，路面容易结冰湿滑，出行请注意防滑保暖！"
+    },
+    {
+      "rule_id": "precip_soon_alert",
+      "name": "近期降水提醒",
+      "description": "未来几小时内预报有雨/雪时提前提醒（提前量由 ALERT_LEAD_HOURS 或 value 指定）",
+      "enabled": true,
+      "priority": 12,
+      "conditions": {
+        "precip_soon_in": 3
+      },
+      "message_template": "🌧 未来几小时内预报可能有降水（雨/雪），出门请带伞注意路况！"
+    },
+    {
       "rule_id": "high_temp_alert",
       "name": "高温预警",
       "description": "当温度超过35度时发出提醒",

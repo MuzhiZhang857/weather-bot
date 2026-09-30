@@ -16,11 +16,18 @@ class SemanticRule:
     enabled: bool = True
 
 
+# 默认规则目录锚定到项目根（相对本模块定位），保证从任意工作目录启动时规则集一致；
+# 不得改回相对 CWD 的 "config"——那会在非项目根启动时静默丢失 JSON 规则（TASK-003 D1）。
+_DEFAULT_CONFIG_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config"
+)
+
+
 class SemanticEngine:
-    def __init__(self, config_dir: str = "config"):
-        self.config_dir = config_dir
-        self.default_rules_path = os.path.join(config_dir, "weather_rules_default.json")
-        self.user_rules_path = os.path.join(config_dir, "weather_rules_user.json")
+    def __init__(self, config_dir: Optional[str] = None):
+        self.config_dir = config_dir or _DEFAULT_CONFIG_DIR
+        self.default_rules_path = os.path.join(self.config_dir, "weather_rules_default.json")
+        self.user_rules_path = os.path.join(self.config_dir, "weather_rules_user.json")
         self.rules: List[SemanticRule] = []
         self._load_rules()
 
@@ -133,7 +140,8 @@ class SemanticEngine:
             'weather_text': None,
             'weather_text_day': None,
             'uv_index': None,
-            'cold_index': None
+            'cold_index': None,
+            'hourly_forecast': []
         }
 
         if weather_data.now:
@@ -151,6 +159,9 @@ class SemanticEngine:
         if weather_data.indices:
             params['uv_index'] = weather_data.indices.uv
             params['cold_index'] = weather_data.indices.cold
+
+        if weather_data.hourly:
+            params['hourly_forecast'] = weather_data.hourly
 
         logger.debug(f"提取的天气参数: {params}")
         return params
@@ -214,6 +225,42 @@ class SemanticEngine:
                     if keyword in weather_text:
                         logger.debug(f"规则 {rule.rule_id}: 天气文本 '{weather_text}' 包含 '{keyword}'")
                         return True
+
+        elif condition_type == 'precip_soon_in':
+            # 未来 N 小时内预报有雨/雪（提前量判定）
+            # condition.value = 提前小时数(默认 3)，兼容数字或 {"hours": 3} 字典
+            raw_value = condition.get('value', 3)
+            if isinstance(raw_value, dict):
+                lead_hours = int(raw_value.get('hours', 3))
+                text_keywords = raw_value.get('text_keywords', ['雨', '雪'])
+                pop_min = float(raw_value.get('pop_min', 30))
+                precip_min = float(raw_value.get('precip_min', 1.0))
+            else:
+                lead_hours = int(raw_value)
+                text_keywords = ['雨', '雪']
+                pop_min = 30
+                precip_min = 1.0
+
+            hourly = params.get('hourly_forecast', [])
+            if not hourly:
+                logger.debug(f"规则 {rule.rule_id}: 无逐时预报数据，跳过")
+                return False
+
+            cutoff = min(lead_hours, len(hourly))
+            for item in hourly[:cutoff]:
+                text = getattr(item, 'text', '') or ''
+                pop = self._parse_numeric(getattr(item, 'pop', None))
+                precip = self._parse_numeric(getattr(item, 'precip', None))
+
+                if any(kw in text for kw in text_keywords):
+                    logger.debug(f"规则 {rule.rule_id}: 未来{lead_hours}小时内文本'{text}'命中雨/雪")
+                    return True
+                if pop is not None and pop >= pop_min:
+                    logger.debug(f"规则 {rule.rule_id}: 未来{lead_hours}小时内降水概率 {pop}% >= {pop_min}%")
+                    return True
+                if precip is not None and precip >= precip_min:
+                    logger.debug(f"规则 {rule.rule_id}: 未来{lead_hours}小时内降水量 {precip}mm >= {precip_min}mm")
+                    return True
 
         elif condition_type == 'uv_index_includes':
             keywords = condition.get('value', [])

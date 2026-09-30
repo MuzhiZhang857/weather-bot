@@ -30,6 +30,19 @@ class DailyWeather:
 
 
 @dataclass
+class WeatherHourly:
+    """24小时逐时预报（和风 /weather/24h）"""
+    fxTime: str = ""
+    text: str = "N/A"
+    temp: str = "N/A"
+    pop: str = "N/A"          # 降水概率（0-100%）
+    precip: str = "N/A"       # 降水量（mm）
+    windDir: Optional[str] = None
+    windScale: Optional[str] = None
+    humidity: Optional[str] = None
+
+
+@dataclass
 class Weather7D:
     tomorrow_text_day: str = "N/A"
     tomorrow_temp_max: str = "N/A"
@@ -65,6 +78,7 @@ class WeatherData:
     city_id: str = ""
     now: Optional[WeatherNow] = None
     daily: Optional[Weather7D] = None
+    hourly: List[WeatherHourly] = field(default_factory=list)
     indices: Optional[IndicesData] = None
 
 

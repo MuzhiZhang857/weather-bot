@@ -71,24 +71,26 @@ class LLMService:
     def generate_simple_alert(self, variables: Dict[str, str]) -> str:
         """使用简单模板生成天气提醒（降级方案）"""
         try:
-            template = f"""{variables.get('city_name', '未知城市')}天气预报
+            template = f"""**{variables.get('city_name', '未知城市')}天气预报**
 
-🌡 今日实况：
+---
+
+**🌡 今日实况：**
 • 天气：{variables.get('weather', '未知')}
 • 温度：{variables.get('temp', 'N/A')}°C（体感 {variables.get('feels_like', 'N/A')}°C）
 • 湿度：{variables.get('humidity', 'N/A')}%
 • 风力：{variables.get('wind_dir', 'N/A')} {variables.get('wind_scale', 'N/A')}级
 
-📅 明日预告：
+**📅 明日预告：**
 • 天气：{variables.get('tomorrow_weather', '未知')}
 • 温度：{variables.get('tomorrow_temp_min', 'N/A')}~{variables.get('tomorrow_temp_max', 'N/A')}°C
 
-【生活指数】
+**【生活指数】**
 • 穿衣：{variables.get('dressing_index', 'N/A')}
 • 紫外线：{variables.get('uv_index', 'N/A')}
 • 舒适度：{variables.get('comfort_index', 'N/A')}
 
-✨ {variables.get('alert_tags', '无特殊提醒')}"""
+> ✨ {variables.get('alert_tags', '无特殊提醒')}"""
 
             logger.info("使用降级方案生成简单天气提醒")
             return template

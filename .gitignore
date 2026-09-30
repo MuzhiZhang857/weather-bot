@@ -49,3 +49,7 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Watchdog 运行时状态（TASK-003）：运行数据不入库，保留目录结构
+state/*
+!state/.gitkeep
