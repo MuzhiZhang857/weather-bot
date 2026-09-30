@@ -10,6 +10,15 @@
 - **关键事实（布尔取证，零值输出）**：SECRET/BOT_ID/SCHEDULE_CHAT_ID 泄露值 = .env 在用值（SAME）→ **活凭据对互联网公开**；HEFENG 泄露为旧值（DIFFER，在用 key 未暴露）；QYWX_WEBHOOK_KEY 与 SECRET 同串（别名暴露）；LLM_API_KEY 为 7 字符占位符——无真实暴露（附带发现：LLM 文案当前实际不可用，一直走降级模板）。
 - 修复设计要点：轮换（R1）先于清理（R2）；历史重写（R3）默认 Skip（轮换已使旧值失效，重写破坏性高）；SCHEDULE_CHAT_ID 不可轮换（标识符），单独泄露依赖凭据配对才可利用。
 
+## 2026-10-01 · 项目基线冻结 c556d59（TASK-008，READY_FOR_REVIEW）
+
+- 用户指令冻结 c556d59 的真实架构、需求状态与后续路线；零代码改动、工作区冻结时点干净。
+- 产出 `docs/BASELINE-c556d59.md`：活跃/退役链路（唯一活跃链路 = weather_monitor → stdout → Hermes → QQ）、安全姿态快照（SEC-01..10）、REQ-001..015 状态、后续路线（M2 尾巴/**M3 Runtime Integration**/M4/PROPOSED 池）、偏离政策与 UNKNOWN 清单。
+- 冻结期需求定级：REQ-006 CONFLICT→ACCEPTED（TASK-007 清理解除硬编码冲突，历史残留归 R3）；REQ-015 UNKNOWN→ACCEPTED（U5 确认主路径 = 本地 Hermes/QQ 推送）。
+- ROADMAP 加冻结标注；M3 收敛为"退役配置文件处置 + README 对齐"（不再有用户决策阻塞）。
+- 偏离政策：基线快照不再修改；此后演进全部走 Task/ADR。
+- **STATE.md 编辑未持久化事件（证据分级，Gate Review 整改 3）**：FACT——TASK-008 对 STATE.md 的一次编辑未持久化，随后磁盘版本与 HEAD 一致（TASK-008 计数 0、git diff 空）。**Cause = UNKNOWN**。可能原因（均未证实，仅列示，不断言任何一项）：editor/file reload；external process；checkout/restore；tool/agent write race；other filesystem interaction。处置：按当时磁盘版本重新应用编辑并即时验证持久化（TASK-008 计数恢复、git diff 确认）。
+
 ## 2026-09-30 · 凭据退役与静态暴露清理（TASK-007，READY_FOR_REVIEW）
 
 - **U5 运行面决议（用户）**：Railway/Render/WeCom AI Bot/legacy webhook 均不再使用；Hermes 活跃用于 **QQ 推送**（BL-016 部分决议）。处置策略随之变更：从"轮换 + 迁移"改为"废弃凭据失效 + 静态暴露清理"。

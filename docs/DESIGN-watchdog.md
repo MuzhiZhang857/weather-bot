@@ -103,7 +103,7 @@
 | D5 | JSON 规则单条件限制（STATE.md B2） | semantic_engine.py:101 | Medium | 既定 BL-007，不阻塞验收 |
 | D6 | 变量构建/time_of_day 三处重复（STATE.md B3 家族） | weather_monitor.py:96-120 | Low | 既定 BL-003 |
 | D7 | `--once` 无操作参数；ALERT_LEAD_HOURS 非法值 fail-fast 崩溃 | weather_monitor.py:132-138,152 | Info | 保留现状（fail-fast 合理）；随 TASK-003 文档说明 |
-| D8 | **Hermes 不可验证**：投递链路上游在仓库外，stdout 契约的端到端正确性无法在本仓库内证明 | 仅注释提及 | Info（对 REQ-013 为 UNKNOWN） | **→ BL-016（Hermes Integration Evidence）**：M2 终验前解决；在此之前不得声称"Production / Hermes integration verified" |
+| D8 | **Hermes 不可验证**：投递链路上游在仓库外，stdout 契约的端到端正确性无法在本仓库内证明 | 仅注释提及 | Info（对 REQ-013 为 UNKNOWN） | **→ BL-016（Hermes Integration Contract/Evidence）**：M3 Runtime Integration 核心（TASK-008 Gate Review 修正）；在此之前不得声称"Production / Hermes integration verified" |
 
 ---
 
@@ -179,4 +179,4 @@
 - **Q1 是否批准 REQ-011..014**：✅ **全部批准为 ACCEPTED**（用户 TASK-003 任务书：Authorization 节）。
 - **Q2 D1 处置**：✅ **修复代码**（不采用"约束 Hermes 固定 CWD"方案）——已实施并测试（ConfigResolutionTests）。
 - **Q3 双通道去重**：✅ **两个独立语义通道**——事件告警走 WeatherState 去重；定时日报（REQ-005）不接入去重（用户任务书 Explicit Design Decisions）。
-- **Q4 Hermes**：⏳ 信息仍未获得 → **BL-016（Integration Evidence）**，M2 终验前解决；在此之前禁止声称"Production / Hermes integration verified"（用户任务书 Hermes Information 节）。
+- **Q4 Hermes**：⏳ 信息仍未获得 → **BL-016（Integration Contract/Evidence）**，M3 Runtime Integration 核心（TASK-008 Gate Review 修正）；在此之前禁止声称"Production / Hermes integration verified"（用户任务书 Hermes Information 节）。

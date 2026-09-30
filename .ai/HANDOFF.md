@@ -49,6 +49,21 @@
 
 ## 交接记录
 
+## 2026-10-01 — ZCode（TASK-008：项目基线冻结 c556d59）
+- **Project / Milestone**: weather-bot · 基线已冻结（c556d59）· M2 收敛尾巴 + **M3 Runtime Integration**（Gate Review 修正）+ M4 待启动
+- **Current Task**: tasks/008-project-baseline-freeze.md（**READY_FOR_REVIEW**）
+- **Completed**: docs/BASELINE-c556d59.md（架构 as-built 快照、REQ-001..015 状态表、后续路线与偏离政策、UNKNOWN 清单）；REQUIREMENTS REQ-006（CONFLICT→ACCEPTED，TASK-007 清理解除）与 REQ-015（UNKNOWN→ACCEPTED，U5）冻结期定级；ROADMAP 冻结标注 + M3 窄化（退役配置处置 + README 对齐，无阻塞）；STATE/DEV_LOG 同步。
+- **Not Completed**: 业务代码零改动；README/WIKI 内容对零改动（BL-014 属 M2 终验；BL-016 → M3 核心）；未打 git tag（未授权，可选项）。
+- **Gate Review Round 1（TASK-008）：CONDITIONAL PASS，三项整改已落**：①活跃链路数据流统一为 weather_monitor（producer）→ stdout（integration boundary）→ Hermes（consumer/scheduler/transport）→ QQ（delivery target），全仓反向表述清零；②M3 恢复为 **Runtime Integration** 核心（BL-016 七项 UNKNOWN 清零为核心项，非附属尾巴）；③STATE.md 编辑异常 **Cause=UNKNOWN**（FACT 仅记录"一次编辑未持久化且磁盘与 HEAD 一致"；可能原因仅列示不断言）。
+- **STATE.md 编辑未持久化事件**：证据分级记录见 DEV_LOG；已重新应用并即时验证持久化（TASK-008 计数恢复）。
+- **Files Changed**: 新增 docs/BASELINE-c556d59.md、tasks/008-*.md；修改 REQUIREMENTS.md、ROADMAP.md、STATE.md、DEV_LOG、HANDOFF。**业务代码零改动**。
+- **New Findings**: 无新缺陷；基线快照确认 `.env` 仍含已退役 WeCom 凭据键值（LOW，本地 untracked，列入未来清理候选）。
+- **Test Results**: `scripts/verify.py` 3/3 PASS @ c556d59 工作树（冻结底座验证）。
+- **Git State**: HEAD = c556d59（用户提交：chore: ignore local security artifacts）；工作区干净 + 本任务文档新增/修改，未 commit。
+- **Next Step**: 用户 Review BASELINE-c556d59.md → 批准后基线生效（可选：授权打 tag）→ 后续任务自基线起立项（M2 终验尾巴 / M3 处置 / M4）。
+- **Needs User Decision**: 基线快照内容确认；是否授权 git tag 标记基线；BL-014/BL-016 立项时机。
+
+
 ## 2026-09-30（夜 4）— ZCode（TASK-007：凭据退役与静态暴露清理）
 - **Project / Milestone**: weather-bot · 安全处置进行中（M2 终验尾巴 BL-014/BL-016 部分）
 - **Current Task**: tasks/completed/007-credential-retirement-cleanup.md（**COMPLETED**——P1-P3 平台失效确认 + Finalization 完成）

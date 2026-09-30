@@ -41,10 +41,9 @@
 - Evidence: .trae spec FR-5/FR-6/AC-5；`services/scheduler.py`；ADR-002/003。
 
 ### REQ-006 配置无硬编码
-- Priority: MUST · Status: **CONFLICT**
+- Priority: MUST · Status: **ACCEPTED**（原 CONFLICT 已解除——TASK-007 静态清理 + P1-P3 平台失效，2026-09-30）
 - 所有配置 SHALL 来自 `.env`/环境变量，代码不得硬编码密钥。
-- **冲突内容**：`qywx_websocket.py`（os.getenv 硬编码默认值）、`wechat_weather.py`（全文硬编码）、README.md"示例值"含疑似真实凭证（STATE.md §6-1）。
-- 处置：活跃路径（services/*）已合规；legacy 按 ADR-012 保留，凭证处置属用户决策（STATE.md §6-1），任何人不得为"合规"擅自改 legacy。
+- 冲突解除记录：README/WIKI 值列占位符化、legacy getenv 默认值清空/字面量改 env 读取（布尔取证 tracked 树 0 命中）；**git 历史仍含旧值**——历史残留属 R3 历史重写（PROPOSED/Skip，独立决策），不影响本条 HEAD 合规判定。
 
 ### REQ-007 结构化日志
 - Priority: SHOULD · Status: **ACCEPTED（Historical）**
@@ -81,7 +80,7 @@
 ### REQ-013 watchdog stdout 消息契约
 - Priority: SHOULD · Status: **ACCEPTED**（2026-09-30，TASK-003 任务书批准；ADR-015）
 - watchdog SHALL 仅在存在**新**告警事件时向 stdout 输出文案（多城市以空行分隔），无新事件时 stdout SHALL 为零字节；诊断日志 SHALL 只写文件不进 stdout；watchdog 自身 SHALL 不负责真实外部消息投递（stdout 即外部投递边界）。
-- **UNKNOWN 成分（M2 终验前解决，BL-016）**：外部调度器"Hermes"（stdout 的消费方与投递方）的频率/消费方式/失败语义未验证——端到端投递正确性无法在本仓库内证明（DESIGN §5.5）。
+- **UNKNOWN 成分（M3 Runtime Integration 核心解决，BL-016——TASK-008 Gate Review 修正）**：外部调度器"Hermes"（stdout 的消费方与投递方）的频率/消费方式/失败语义未验证——端到端投递正确性无法在本仓库内证明（DESIGN §5.5）。
 - 详细设计：docs/DESIGN-watchdog.md §5.1/§5.3；AC-5；测试：test_watchdog.py（MonitorFlowTests）。
 
 ### REQ-014 雨/雪提前量可配置
@@ -90,6 +89,6 @@
 - 详细设计：docs/DESIGN-watchdog.md §5.4；AC-1；测试：test_watchdog.py（PrecipSoonRuleTests）。
 
 ### REQ-015 部署路径
-- Priority: MUST · Status: **UNKNOWN**
-- 系统 SHALL 部署于用户确认的主路径并保持配置一致。当前三条路径并存：Railway（`railway.json`→`main.py --mode both`）、Render（`render.yaml`→`qywx_websocket.py`）、本地 Hermes-watchdog（日志证实活跃）。
-- **所需证据**：用户对 STATE.md §6-2 的裁决（保留哪些、Hermes 配置在哪）。裁决后本条转 ACCEPTED 并驱动 ROADMAP M3。
+- Priority: MUST · Status: **ACCEPTED**（U5 决议，2026-09-30：主路径 = 本地 Hermes watchdog/QQ 推送）
+- 系统 SHALL 部署于用户确认的主路径并保持配置一致。**已确认（U5）**：Railway/Render/WeCom AI Bot/legacy webhook 均退役；活跃链路 = weather_monitor → stdout → Hermes → QQ 推送（producer / integration boundary / consumer·scheduler·transport / delivery target）。
+- 残留项（M3 收敛范围）：退役部署配置文件（railway.json/render.yaml）的处置（删除或标注退役）与 README 部署章节对齐（BL-014）。

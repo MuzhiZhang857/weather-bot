@@ -1,6 +1,7 @@
 # ROADMAP — 里程碑（ADP-1.0 §8）
 
 > 职责：回答"项目按什么顺序发展"。每个里程碑必须有 Objective / Scope / Exit Criteria。
+> **基线冻结（TASK-008）**：项目基线冻结于 commit **c556d59**（docs/BASELINE-c556d59.md）——本路线自该基线起演进，偏离须走 Task/ADR。
 > 状态：COMPLETED / IN_PROGRESS / BLOCKED / PLANNED。**Future 想法进 BACKLOG，不进本文**——不把愿望伪装成计划。
 > 历史里程碑按仓库证据回填（TASK-000，2026-09-30）。
 
@@ -29,14 +30,17 @@
   - [x] `weather_state` 去重逻辑单元测试入库并入 `scripts/verify.py` 闭环（✅ test_watchdog.py 22 例，TASK-003）
   - [ ] README / ARCHITECTURE 与最终形态一致（ARCHITECTURE 已更新；README→BL-014，终验对齐）
   - [x] 无 P0/P1 已知缺陷（✅ D1 已修复、D2 已补测；D3/D4 经用户决定记录为接受风险；B1 属测试资产缺陷→BL-001）
-- **Blockers**: 仅剩 commit 授权（Review 后）；BL-016 Hermes 证据在 M2 终验前解决。
+- **Blockers**: 仅剩 commit 授权（Review 后）与 BL-014（终验内容对齐）；BL-016 已移入 M3 Runtime Integration 核心（Gate Review 修正）。
 
-## M3 — Deployment · BLOCKED
+## M3 — Runtime Integration · IN_PROGRESS
 
-- **Objective**: 确定唯一主部署路径，使仓库配置与实际运行一致（REQ-015）。
-- **Scope**: Railway / Render / Hermes-watchdog 三路径裁决；`render.yaml` 修正或废弃（需 ADR）；README 部署章节重写。
-- **Exit Criteria**: STATE.md §6-2 决策完成；被废弃路径有 ADR-NNN 记录；文档与实际部署一致。
-- **Blockers**: 用户未裁决（REQ-015 UNKNOWN）。
+- **Objective**: 为唯一活跃链路建立 **Hermes integration contract 与证据**（关闭 BL-016），并完成退役部署配置清理与 README runtime 对齐。Hermes integration 是本里程碑**核心项**，不是附属尾巴。
+- **Scope**:
+  1. **Hermes integration contract/evidence（核心）**——逐项取证并契约化 BL-016 七项 UNKNOWN：调度频率；是否允许重叠执行；stdout 消费语义；空输出语义；exit code 语义；失败/重试语义；重试与去重（weather_state）的关系。
+  2. **Retired deployment configuration cleanup**——railway.json / render.yaml 删除或标注退役（需 ADR）。
+  3. **README runtime alignment**——以 producer → stdout → Hermes → QQ 的规范方向重述活跃链路。
+- **Exit Criteria**: BL-016 关闭（七项 UNKNOWN 全部有证据，或明确记录"不可得"及其影响）；退役配置处置完成（含 ADR）；README 与 BASELINE-c556d59 链路表述一致。
+- **Blockers**: 需用户提供 Hermes 运行面信息，或授权运行期取证（L3）。
 
 ## M4 — Reliability · PLANNED
 

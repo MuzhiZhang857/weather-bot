@@ -12,7 +12,7 @@ weather-bot 是一个**中文天气提醒机器人**：
 1. 从和风天气（QWeather）API 获取实时天气、7 天预报、24 小时逐时预报、生活指数；
 2. 用**语义规则引擎**（代码内置规则 + JSON 可配置规则）把天气数值翻译成标签（如 "低温预警"、"近期降水"）；
 3. 调用 **OpenAI 兼容 LLM** 生成有人情味的中文提醒文案（失败自动降级为固定模板）；
-4. 把提醒送达用户，两条通道：
+4. 把提醒送达用户，两条通道（**U5/Gate Review 修正——当前活跃链路的数据流方向**：`weather_monitor.py`（producer）→ stdout（integration boundary）→ Hermes（consumer/scheduler/transport）→ QQ（delivery target）；Hermes 启动 producer 属控制流）：
    - **企业微信机器人 WebSocket**（`aibot` 协议）主动推送 / 回复 @ 消息；
    - **stdout 文本**（watchdog 模式，由外部调度器 "Hermes" 读取后投递微信 — 见 Unknown Areas）。
 
@@ -220,7 +220,7 @@ WS 收到 aibot_msg_callback
 
 ## 16. Unknown Areas
 
-- **UNKNOWN — requires verification**: "Hermes" 是什么（Windows 计划任务？网关服务？），由谁维护，如何配置调度频率。`weather_monitor.py` 注释称其"读取 stdout 作为消息体投递微信"。→ 已立案 **BACKLOG BL-016（Integration Evidence）**，M2 终验前解决。
+- **UNKNOWN — requires verification**: "Hermes" 是什么（Windows 计划任务？网关服务？），由谁维护，如何配置调度频率。`weather_monitor.py` 注释称其"读取 stdout 作为消息体投递微信"。→ 已立案 **BACKLOG BL-016（Integration Contract/Evidence）**，M3 Runtime Integration 核心（TASK-008 Gate Review 修正）。
 - **UNKNOWN — requires verification**: Railway / Render 部署当前是否仍在运行。日志证据（logs/weather_bot.log）表明本地 watchdog 是 2026-09 活跃路径。
 - **UNKNOWN — requires verification**: 和风天气自定义域名 `mg5u9xcaf3.re.qweatherapi.com` 的来源（企业版专属 host？）。历史 commit 中无解释。
 - **UNKNOWN — requires verification**: `.venv`（损坏，指向已卸载的 `D:\Program Files\Tencent\Marvis\...\python311`）与 `.venv2`（Python 3.11.15，无 pip）为什么并存；`.venv2` 如何创建（无 pip，疑似 uv 管理）。
