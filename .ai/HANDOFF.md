@@ -49,9 +49,22 @@
 
 ## 交接记录
 
+## 2026-10-01 — ZCode（TASK-009：文档状态同步）
+- **Project / Milestone**: weather-bot · 基线已冻结（c556d59 + baseline-v1.0 tag + eb0886e）· M2 终验尾巴 BL-014 / M3 Runtime Integration 待立项
+- **Current Task**: tasks/009-documentation-state-sync.md（**READY_FOR_REVIEW**，等待用户 Review）
+- **Completed**: 只读核对（HEAD/tag/三任务状态/动态文档引用）→ TASK-004/005/008 任务文件 COMPLETED 并归档（完成依据逐条记录）；DEV_LOG 六条条目头陈旧状态修正 + TASK-009 条目；STATE §3/§8/header 同步；HANDOFF 历史记录的 Current Task 状态修正。
+- **Not Completed**: 无业务/配置/安全策略改动；BL-016 未处理；无 TASK-010；未 commit/push。
+- **Files Changed**: tasks/009-*.md（新增）、tasks/completed/{004,005,008}（状态+归档）、docs/STATE.md、.ai/HANDOFF.md、docs/DEVELOPMENT_LOG.md。BACKLOG 核查：无 READY_FOR_REVIEW 状态引用，零变更。
+- **New Findings**: 无。
+- **Test Results**: verify.py 3/3 PASS（前次基线验证后零代码改动）；git diff 审计仅 .md 文件。
+- **Git State**: HEAD = eb0886e；tag baseline-v1.0 在位；工作区 = 本任务文档变更，未 commit。
+- **Next Step**: 用户 Review TASK-009 → 之后可授权：M2 终验立项（BL-014）或 M3 Runtime Integration 立项（BL-016 七项取证）。
+- **Needs User Decision**: TASK-009 Review；下一任务授权（M2 收尾 vs M3 立项）。
+
+
 ## 2026-10-01 — ZCode（TASK-008：项目基线冻结 c556d59）
 - **Project / Milestone**: weather-bot · 基线已冻结（c556d59）· M2 收敛尾巴 + **M3 Runtime Integration**（Gate Review 修正）+ M4 待启动
-- **Current Task**: tasks/008-project-baseline-freeze.md（**READY_FOR_REVIEW**）
+- **Current Task**: tasks/completed/008-project-baseline-freeze.md（**COMPLETED** @ TASK-009）
 - **Completed**: docs/BASELINE-c556d59.md（架构 as-built 快照、REQ-001..015 状态表、后续路线与偏离政策、UNKNOWN 清单）；REQUIREMENTS REQ-006（CONFLICT→ACCEPTED，TASK-007 清理解除）与 REQ-015（UNKNOWN→ACCEPTED，U5）冻结期定级；ROADMAP 冻结标注 + M3 窄化（退役配置处置 + README 对齐，无阻塞）；STATE/DEV_LOG 同步。
 - **Not Completed**: 业务代码零改动；README/WIKI 内容对零改动（BL-014 属 M2 终验；BL-016 → M3 核心）；未打 git tag（未授权，可选项）。
 - **Gate Review Round 1（TASK-008）：CONDITIONAL PASS，三项整改已落**：①活跃链路数据流统一为 weather_monitor（producer）→ stdout（integration boundary）→ Hermes（consumer/scheduler/transport）→ QQ（delivery target），全仓反向表述清零；②M3 恢复为 **Runtime Integration** 核心（BL-016 七项 UNKNOWN 清零为核心项，非附属尾巴）；③STATE.md 编辑异常 **Cause=UNKNOWN**（FACT 仅记录"一次编辑未持久化且磁盘与 HEAD 一致"；可能原因仅列示不断言）。
@@ -78,7 +91,7 @@
 
 
 ## 2026-09-30（夜 3）— ZCode（TASK-006：WeCom SECRET 轮换准备）
-- **Project / Milestone**: weather-bot · 安全基线（TASK-004/005 READY_FOR_REVIEW、TASK-006 COMPLETED）· M2 终验尾巴不变
+- **Project / Milestone**: weather-bot · 安全基线（TASK-004/005/006/007/008 全部 COMPLETED、TASK-006 COMPLETED）· M2 终验尾巴不变
 - **Current Task**: tasks/completed/006-wecom-secret-rotation-prep.md（**COMPLETED**——Review PASS，两项修正已落）
 - **Completed**: docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md（SECRET 消费方 C1-C5、部署面四方确认表、Before/Rotation/After 步骤、不可逆回滚设计）；STATE/BACKLOG/DEV_LOG 同步。
 - **Not Completed**: 轮换执行（待批准+待部署面确认）；SEC-R2 清理；U5/部署面 UNKNOWN 项（用户确认）。
@@ -93,7 +106,7 @@
 
 ## 2026-09-30（夜 2）— ZCode（TASK-005：凭据暴露处置设计）
 - **Project / Milestone**: weather-bot · 安全基线（TASK-004/005 均待 Review）· M2 终验尾巴不变
-- **Current Task**: tasks/005-credential-exposure-remediation-design.md（**READY_FOR_REVIEW**）
+- **Current Task**: tasks/completed/005-credential-exposure-remediation-design.md（**COMPLETED** @ TASK-009）
 - **Completed**: docs/SECURITY-CREDENTIAL-REMEDIATION.md（资产清单 A1-A8、四维影响分析、SEC-R1..R4、风险与回滚、AC 全 PROPOSED）；泄露值 vs 在用值布尔判定完成；STATE/BACKLOG/DEV_LOG 同步。
 - **Not Completed**: 一切执行（轮换/清理/重写/迁移均未实施，待批准立项）；U5 使用方盘点（用户）。
 - **Files Changed**: 新增 tasks/005-*.md 与 docs/SECURITY-CREDENTIAL-REMEDIATION.md；修改 BACKLOG/STATE/DEV_LOG/HANDOFF。**业务代码零改动**。
@@ -106,7 +119,7 @@
 
 ## 2026-09-30（夜）— ZCode（TASK-004：安全基线与修复设计）
 - **Project / Milestone**: weather-bot · M2 Watchdog（终验尾巴 BL-014/BL-016）+ 安全基线建立
-- **Current Task**: tasks/004-security-baseline-design.md（**READY_FOR_REVIEW**）
+- **Current Task**: tasks/completed/004-security-baseline-design.md（**COMPLETED** @ TASK-009）
 - **Completed**: docs/SECURITY-REVIEW.md（攻击面总览、S-01..S-10 定级 TP×6/FP×4、SEC-T1/T2/T3 修复设计全部 PROPOSED、U1-U6 Unknowns）；BL-012/BL-018 关联定级、BL-019 立案；STATE/DEV_LOG 同步。
 - **Not Completed**: 一切修复实施（SEC-T1/T2/T3 均待批准）；凭据轮换（用户平台操作）；真实样本取证（U3/U4 需 L3 授权）。
 - **Files Changed**: 仅新增 tasks/004-*.md 与 docs/SECURITY-REVIEW.md，修改 BACKLOG/STATE/DEV_LOG/HANDOFF。**业务代码零改动**。

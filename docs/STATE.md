@@ -2,7 +2,7 @@
 
 > **维护规则**：任何 Agent 完成重要工作后必须更新本文件对应小节（最近修改 / 已知 Bug / 下一步）。日期一律实际当天。
 
-**最后更新**：2026-09-30（TASK-003 Final Review PASS → COMPLETED；Git checkpoint `feat: finalize watchdog implementation` 已建立，hash 见 git log）
+**最后更新**：2026-10-01（TASK-009 状态同步：TASK-004/005/008 → COMPLETED；baseline-v1.0 tag 核验）
 
 ---
 
@@ -29,7 +29,7 @@
 
 ## 3. 当前正在开发什么
 
-**TASK-008「Project Baseline Freeze」——基线冻结完成，READY_FOR_REVIEW**（零代码改动）：项目基线冻结于 **c556d59**（docs/BASELINE-c556d59.md，工作区干净、verify 3/3）；REQ-006/015 冻结期转 ACCEPTED；路线自基线起演进。前置：**TASK-007 COMPLETED**（Finalization：静态清理 ✅ + P1-P3 平台失效 ✅ → SEC-01/07/08 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN）；TASK-006 COMPLETED（Review + 两项修正）；TASK-004/005 READY_FOR_REVIEW：（策略依据 U5：WeCom 链路退役、活跃链路 = Hermes→QQ 推送）：HEAD 工作树对全部在用/旧凭据值 **0 命中**（README/WIKI 占位符化、legacy getenv 默认值清空）；**SEC-01/07/08 已降级：Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN**。历史任务：TASK-006 COMPLETED（Review 通过 + 两项修正）、TASK-004/005 READY_FOR_REVIEW：SECRET 使用方 4 处（watchdog 零依赖）、部署面四方（2 个 UNKNOWN 待用户确认）、Before/Rotation/After 三段步骤与回滚设计见 docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md。前置任务 TASK-004/005 均待 Review：凭据暴露处置方案 docs/SECURITY-CREDENTIAL-REMEDIATION.md 已产出（SEC-R1 轮换 / R2 清理 / R3 历史重写评估 / R4 环境迁移，全 PROPOSED）。**关键事实：SECRET/BOT_ID/CHAT_ID 的泄露值=在用值（活凭据公开）；HEFENG 泄露为旧值，在用 key 未暴露；LLM_API_KEY 为占位符无真实暴露（附带发现：LLM 文案当前实际走降级模板）**。前置任务 TASK-004（docs/SECURITY-REVIEW.md）同状态待 Review。
+**TASK-004/005/008 全部 COMPLETED（TASK-009 状态同步，2026-10-01）**：安全基线（SECURITY-REVIEW）、凭据处置设计（SEC-R1..R4）、基线冻结（c556d59 + baseline-v1.0 tag + eb0886e）全部闭环；SEC-01/07/08 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN；REQ-006/015 冻结期转 ACCEPTED。此前闭环：TASK-007（静态清理 + P1-P3 平台失效）、TASK-006（Review + 两项修正）、TASK-003（watchdog 收敛：D1 修复 + 23 例测试）。
 
 ## 4. 已知 Bug
 
@@ -50,7 +50,7 @@
 
 ## 6. 当前阻塞问题（需用户决定）
 
-1. ~~未提交的 watchdog 功能：何时提交？是否为最终形态？~~ → **已裁决（TASK-003）**：REQ-011..014 ACCEPTED，实现已收敛（D1 修复 + 22 例测试 + 文档对齐），实现处于 READY_FOR_REVIEW——等待 Review 后授权 commit。
+1. ~~未提交的 watchdog 功能：何时提交？是否为最终形态？~~ → **已处置完毕**（TASK-003 收敛 + checkpoint d37ed3a/f2358de/c556d59）：REQ-011..014 ACCEPTED、23 例测试在 verify.py 闭环内、文档已对齐——无遗留。
 2. 三条部署路径（Railway / Render / Hermes-watchdog）保留哪些？Hermes 的调度配置在哪里？（另：Hermes 集成证据已立案 BL-016，M3 Runtime Integration 核心——TASK-008 Gate Review 修正）
 3. **凭证暴露处置——已处置（TASK-007 + P1-P3，2026-09-30）**：静态清理 ✅ + 平台失效 ✅；最终状态 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN（暴露窗口 77c705d 起至失效日；不做任何第三方访问断言）。R3 历史重写维持 PROPOSED/Skip。
 4. ~~`state/weather_state.json` 是否 gitignore~~ → **已完成（TASK-003）**：`state/*` 已 gitignore，`.gitkeep` 保留，现有运行数据未动。
@@ -61,7 +61,7 @@
 
 ## 8. 下一动作（Next Action）
 
-1. **Review 待审文档**：TASK-004/005（安全设计——重点挑战 FP 定级 SEC-02/04/05 与 SEC-T2/T3 兼容性风险）与 **TASK-008（基线冻结）**——基线冻结后，一切 Review 结论应对照 BASELINE-c556d59 校验一致性。
+1. ~~Review 待审文档~~ **已全部闭环**（TASK-004/005/008 COMPLETED @ TASK-009；BASELINE-c556d59 为一致性校验基准）。下一步候选（均待用户授权立项）：M2 终验（BL-014）、M3 Runtime Integration（BL-016 七项取证）。
 2. **已完成归档**：P1-P3 平台失效 ✅（2026-09-30）；U5 运行面 ✅（Hermes 活跃用于 QQ 推送；Railway/Render/WeCom/legacy 退役）；TASK-007 checkpoint ✅（f2358de）；基线冻结 ✅（c556d59）。
 3. **M2 终验尾巴**：BL-014（README/WIKI 内容对齐，凭据部分已清）。4. **M3 Runtime Integration（核心，Gate Review 修正）**：BL-016 七项 UNKNOWN（调度频率/重叠执行/stdout 消费/空输出/exit code/失败重试/重试与去重关系）清零 + 退役配置处置 + README runtime 对齐。
 

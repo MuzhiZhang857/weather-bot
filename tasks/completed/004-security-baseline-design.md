@@ -1,9 +1,10 @@
 # TASK-004: Security Baseline & Remediation Design
 
 - ID: TASK-004
-- Status: READY_FOR_REVIEW
+- Status: COMPLETED
 - Requirement: 用户直接指令（2026-09-30 TASK-004 任务书）；承接 BL-018（Mimosa L3 findings）与 STATE §6-3（凭据决策）
 - Created: 2026-09-30
+- Completed: 2026-10-01（TASK-009 状态同步）
 
 ## Objective
 
@@ -69,5 +70,7 @@ TASK-003 checkpoint 经用户裁决"带已知发现提交"（BL-018），但发�
 - Tests: `scripts/verify.py` → compile/semantic/watchdog 3/3 PASS，exit 0（L0 回归守护；本任务无代码改动，无运行时验证需求）。
 - Commands: 安全取证 A-M 批次（TLS/CERT_NONE 分布、URL sink 清单、凭据字面量定位与非占位符布尔判定、git 历史深度、origin）——**全部仅输出行号/计数/布尔值，凭据值零打印零复制**；grep 交叉引用核查（SECURITY-REVIEW 被 BACKLOG×3 处引用）。
 - Git commit: 未提交（无授权）。
-- Review: 待用户执行。Review 要点：①FP 定级是否成立（SEC-02/04/05/10 的复核依据）；②SEC-03 可达性判断（依赖 SEC-06 链）是否接受；③SEC-T1/T2/T3 的 Compatibility Risk 是否可承受；④U1（仓库可见性）建议立即自查。
+- Review: 以 TASK-009 状态同步闭环（2026-10-01）。
+- **完成依据（TASK-009 任务书）**：①SECURITY-REVIEW 已完成；②Public repository 暴露事实已确认（U1）；③SEC-01/07/08 已通过 TASK-006/007 完成处置闭环（Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN）；④剩余 SEC-T2/T3/R3 保持独立 PROPOSED（BL-019/BL-012），不影响本任务完成。
+- 原 Review 要点存档：①FP 定级是否成立（SEC-02/04/05/10）；②SEC-03 可达性判断；③SEC-T1/T2/T3 Compatibility Risk；④U1 仓库可见性（已确认 Public）。
 - **U1 决议补充（2026-09-30，用户确认）**：Repository Visibility = **Public** → SEC-01/07/08 Exposure = CONFIRMED（互联网公开，自 77c705d 持续），Compromise = UNKNOWN；凭据轮换（SEC-T1 第①步）紧急度升为最高。已同步 SECURITY-REVIEW.md §2/§3/§5。

@@ -1,9 +1,10 @@
 # TASK-005: Credential Exposure Remediation Design（仅设计，不执行）
 
 - ID: TASK-005
-- Status: READY_FOR_REVIEW
+- Status: COMPLETED
 - Requirement: 用户直接指令（2026-09-30 TASK-005 任务书）；承接 SECURITY-REVIEW.md SEC-01/07/08（Exposure=CONFIRMED PUBLIC，U1 决议）
 - Created: 2026-09-30
+- Completed: 2026-10-01（TASK-009 状态同步）
 
 ## Objective
 
@@ -66,4 +67,6 @@ U1 已确认仓库 Public → 凭据按"已泄露"处理，轮换为最高优先
 - Tests: 本任务纯文档；`scripts/verify.py` 3/3 PASS（前轮回归，零代码改动）。
 - Commands: 暴露扫描（git grep -lF 按 HEAD 树 + WIKI.md 布尔）与泄露值 vs 在用值同/异判定——**全部仅输出文件名与同/异布尔，凭据值零打印**；LLM_API_KEY 计划外命中已定性为占位符（长度 7 + 字符集布尔判定，值零打印）。
 - Git commit: 未提交（无授权）。
-- Review: 待用户执行。Review 要点：①R1 轮换顺序与中断窗口是否可接受；②R3 默认 Skip 是否同意；③SCHEDULE_CHAT_ID 不可轮换的定性；④附带发现（LLM 占位符）是否需要运营动作。
+- Review: 以 TASK-009 状态同步闭环（2026-10-01）。
+- **完成依据（TASK-009 任务书）**：①Credential remediation design 已完成（SEC-R1..R4）；②SEC-R1/R2 已实际执行——按 U5 决议语义：R1 = 平台侧废弃凭据失效（P1-P3），R2 = 静态暴露清理（HEAD 0 命中）；③TASK-006/007 完成设计到执行闭环；④历史重写 R3 保持 PROPOSED（独立决策）。
+- 原 Review 要点存档：①R1 顺序与中断窗口；②R3 默认 Skip；③SCHEDULE_CHAT_ID 不可轮换定性；④LLM 占位符运营动作（用户后续决策项）。

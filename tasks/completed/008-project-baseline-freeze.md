@@ -1,7 +1,7 @@
 # TASK-008: Project Baseline Freeze（c556d59）
 
 - ID: TASK-008
-- Status: READY_FOR_REVIEW
+- Status: COMPLETED
 - Requirement: 用户直接指令（2026-09-30 TASK-008 任务书）
 - Created: 2026-10-01
 
@@ -63,8 +63,8 @@
 
 - Tests: `scripts/verify.py` 3/3 PASS @ c556d59 工作树（冻结底座验证；L0）。
 - Commands: `git log/show --stat c556d59`（HEAD 确认、工作区干净）；grep 交叉引用（BASELINE 被 ROADMAP/STATE/HANDOFF/DEV_LOG 引用；REQ-006/015 状态核对）。
-- Git commit: 未提交（无授权）。
-- Review: **Gate Review Round 1（2026-09-30）：CONDITIONAL PASS，三项整改已落，保持 READY_FOR_REVIEW 等 Final Review**——
+- Git commit: 基线文档已随 eb0886e 入库；**baseline-v1.0 tag 已创建**（TASK-009 只读核验确认，注释 "ADP baseline after watchdog convergence and credential remediation"）。
+- Review: **Gate Review Round 1：CONDITIONAL PASS（三项整改已落）→ Final Review 通过（2026-10-01，TASK-009 确认）**。Round 1 整改明细：——
   1. 活跃链路数据流统一为 **weather_monitor（producer）→ stdout（integration boundary）→ Hermes（consumer/scheduler/transport）→ QQ（delivery target）**；BASELINE/ROADMAP/STATE/REQUIREMENTS/ARCHITECTURE/DEV_LOG/HANDOFF/归档 007 全仓反向表述清零。
   2. M3 恢复为 **Runtime Integration** 核心：Hermes integration contract/evidence（BL-016 七项 UNKNOWN 清零）为第一项，退役配置清理与 README runtime 对齐并列；ROADMAP/BASELINE/STATE/BACKLOG/DEV_LOG 同步。
   3. STATE.md 编辑异常证据分级：FACT 仅记录"一次编辑未持久化且磁盘与 HEAD 一致"；**Cause=UNKNOWN**；可能原因（editor reload/external process/checkout-restore/write race/filesystem interaction）仅列示不断言。记录落于 DEV_LOG 与 HANDOFF。
