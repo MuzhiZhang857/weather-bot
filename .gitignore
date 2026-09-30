@@ -53,3 +53,7 @@ temp/
 # Watchdog 运行时状态（TASK-003）：运行数据不入库，保留目录结构
 state/*
 !state/.gitkeep
+
+# Mimosa 安全工具本地运行时产物（finding-ledger/history/reports，机器本地）
+.mimosa/
+WIKI.md 
