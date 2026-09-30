@@ -3,6 +3,36 @@
 > 职责：记录里程碑完成、重大决策、重大事故、重要失败尝试、跨 Agent 交接检查点。
 > **不记录**普通代码操作流水账（那是 git log 的职责）。建立于 TASK-000（2026-09-30）；此前事件按仓库证据回填。
 
+## 2026-09-30 · 凭据暴露处置设计（TASK-005，READY_FOR_REVIEW）
+
+- 用户指令针对 SEC-01/07/08（Public 仓库凭据暴露）产出处置设计；零代码改动、零凭据值输出。
+- 产出 `docs/SECURITY-CREDENTIAL-REMEDIATION.md`：资产清单 A1-A8、四维影响分析、SEC-R1（轮换）/R2（清理）/R3（历史重写评估：默认 Skip）/R4（环境迁移）、风险与回滚、AC 全 PROPOSED。
+- **关键事实（布尔取证，零值输出）**：SECRET/BOT_ID/SCHEDULE_CHAT_ID 泄露值 = .env 在用值（SAME）→ **活凭据对互联网公开**；HEFENG 泄露为旧值（DIFFER，在用 key 未暴露）；QYWX_WEBHOOK_KEY 与 SECRET 同串（别名暴露）；LLM_API_KEY 为 7 字符占位符——无真实暴露（附带发现：LLM 文案当前实际不可用，一直走降级模板）。
+- 修复设计要点：轮换（R1）先于清理（R2）；历史重写（R3）默认 Skip（轮换已使旧值失效，重写破坏性高）；SCHEDULE_CHAT_ID 不可轮换（标识符），单独泄露依赖凭据配对才可利用。
+
+## 2026-09-30 · 凭据退役与静态暴露清理（TASK-007，READY_FOR_REVIEW）
+
+- **U5 运行面决议（用户）**：Railway/Render/WeCom AI Bot/legacy webhook 均不再使用；Hermes 活跃用于 **QQ 推送**（BL-016 部分决议）。处置策略随之变更：从"轮换 + 迁移"改为"废弃凭据失效 + 静态暴露清理"。
+- **静态清理已执行（Agent 侧）**：README 5 处（4 表行 + 1 日志示例）、WIKI 4 处占位符化；qywx_websocket.py 4 处 getenv 默认值清空；wechat_weather.py 2 处字面量改 os.getenv（补 import os）。**HEAD 工作树对全部在用/旧凭据值 0 命中**；verify.py 3/3 PASS（legacy 仍可编译）。
+- **平台失效 PENDING（用户 P1-P3）**：WeCom 停用 AI Bot / 处置 legacy webhook 对象 / 和风禁用旧 key——确认后 SEC-01/07/08 方可降级为"历史暴露，凭据已失效"。
+- 附带：README.md:228 的会话 ID 日志示例（非表格行）在复扫中发现并一并清除——教训：**凭据扫描不能只盯表格结构，需以值本身做全文布尔扫描**。
+- **Finalization（2026-09-30）**：P1-P3 平台失效完成（用户确认）→ SEC-01/07/08 最终状态 = Historical Exposure CONFIRMED / Credential RETIRED-REVOKED / Compromise UNKNOWN（不做任何第三方访问断言）；SEC-R3 维持 PROPOSED/Skip；Hermes QQ 推送链路未受影响（用户确认）。TASK-007 COMPLETED。
+
+## 2026-09-30 · WeCom SECRET 轮换准备（TASK-006，READY_FOR_REVIEW）
+
+- 用户指令产出轮换前准备计划；零代码改动、零值输出、未执行轮换。
+- 产出 `docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md`：SECRET 消费方清单（C1 push_service 全模式 / C2 legacy getenv 泄露默认值 / C3 wechat_weather webhook 字面量——AI Bot SECRET 与群机器人 webhook key 是不同对象，legacy 用法有效性 UNKNOWN / C4 watchdog 零依赖 / C5 Hermes UNKNOWN）、部署面四方（Railway/Render UNKNOWN 需用户确认、本地 CONFIRMED、Hermes BL-016）、Before/Rotation/After 三段步骤与不可逆回滚设计。
+- 关键结论：轮换强制性迁移面 = C1（本地 .env + 活跃云平台）；watchdog 当前活跃路径零中断；C3 legacy webhook 用法是否曾成功投递 UNKNOWN。
+- **Review（2026-09-30）：PASS，附两项修正，已落文档**：①"重置后旧值立即失效"由 FACT 降级为 UNKNOWN——失效语义缺平台证据，执行期必须验证新值生效与旧值失效（或记录无法验证）；②QYWX_WEBHOOK_KEY 与 AI Bot SECRET 建模为独立凭据对象——同串不构成轮换互涉依据，legacy webhook 使用状态 UNKNOWN 待用户确认。联动修正 CREDENTIAL-REMEDIATION SEC-R1 与 SECURITY-REVIEW SEC-01。教训入档：**平台行为（失效语义/重试/并存）在取得运行证据前一律 UNKNOWN，不得写成 FACT**。
+
+## 2026-09-30 · 安全基线与修复设计（TASK-004，READY_FOR_REVIEW）
+
+- 用户指令对 BL-018 全部 findings 及相关安全面做事实确认、风险建模与修复设计；零代码改动。
+- 产出 `docs/SECURITY-REVIEW.md`：攻击面总览、S-01..S-10 登记册（分类 TP×6 / FP×4 / 历史×3）、修复设计 SEC-T1（凭据轮换与静态清理）/ SEC-T2（response_url SSRF 加固）/ SEC-T3（WS 证书校验恢复），全部 PROPOSED。
+- **核心结论**：全项目最可信攻击链 = SEC-06（WS 证书校验禁用，MITM 可截订阅凭据）→ SEC-03（response_url 无校验，盲 SSRF）。
+- 取证全程凭据零打印（仅行号/计数/布尔）；发现并记录 U1-U6 六项 UNKNOWN（仓库可见性最关键）。
+- BACKLOG 同步：BL-012 关联 SEC-06、BL-018 关联定级、新增 BL-019。
+
 ## 2026-09-30 · Watchdog 实现收敛（TASK-003，READY_FOR_REVIEW）
 
 - 用户批准 REQ-011..014 为 **ACCEPTED** 并给出显式设计决定（ADR-015）：事件告警与定时日报**双通道分离**（日报不接 WeatherState）；配置不得依赖 CWD；watchdog 不做真实投递（stdout 为投递边界）；D3/D4 接受为已知风险不实现锁/迟滞。

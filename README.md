@@ -133,13 +133,13 @@ git push -u origin main
 #### 企业微信配置
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
-| `BOT_ID` | 企业微信机器人ID | `aibq4IJma9oTpus6NeE6--WVJtJaK_0O3wN` |
-| `SECRET` | 企业微信机器人密钥 | `ST6Ytrm7M1BAlVOCVxuGwMKrNg7hoWR3rStapaIak9D` |
+| `BOT_ID` | 企业微信机器人ID | <YOUR_BOT_ID> |
+| `SECRET` | 企业微信机器人密钥 | <YOUR_SECRET> |
 
 #### 天气 API 配置
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
-| `HEFENG_API_KEY` | 和风天气API密钥 | `bb4de13c914d421a9aa4f255df9de5c9` |
+| `HEFENG_API_KEY` | 和风天气API密钥 | <YOUR_HEFENG_KEY> |
 | `CITY_ID` | 城市ID | `101080101` |
 | `CITY_NAME` | 城市名称 | `呼和浩特` |
 
@@ -156,7 +156,7 @@ git push -u origin main
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
 | `SCHEDULE_TIME` | 定时推送时间 | `08:00` |
-| `SCHEDULE_CHAT_ID` | 推送目标群聊ID | `wrpv4ybQAA1abzhZBJZ8SaOVZIb5u9NA` |
+| `SCHEDULE_CHAT_ID` | 推送目标群聊ID | <YOUR_CHAT_ID> |
 | `SCHEDULE_CHAT_TYPE` | 会话类型 | `2` (2=群聊, 1=单聊) |
 
 ### 4. 配置自定义域名（可选）
@@ -225,7 +225,7 @@ Render 默认会在你推送代码到 GitHub 时自动部署。
 
 运行一次脚本，当用户在群聊中发送消息时，终端会输出群聊ID：
 ```
-会话ID: wrpv4ybQAA1abzhZBJZ8SaOVZIb5u9NA
+会话ID: <YOUR_CHAT_ID>
 ```
 
 ---

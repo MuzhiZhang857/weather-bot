@@ -49,6 +49,59 @@
 
 ## 交接记录
 
+## 2026-09-30（夜 4）— ZCode（TASK-007：凭据退役与静态暴露清理）
+- **Project / Milestone**: weather-bot · 安全处置进行中（M2 终验尾巴 BL-014/BL-016 部分）
+- **Current Task**: tasks/completed/007-credential-retirement-cleanup.md（**COMPLETED**——P1-P3 平台失效确认 + Finalization 完成）
+- **Completed**: 执行计划（P/A/V/N 四类责任划分）；静态清理落地——README 5 处、WIKI 4 处占位符化，qywx_websocket.py 4 处 getenv 默认值清空，wechat_weather.py 2 处字面量改 os.getenv（+import os）；离线验证 V1-V4 全过（HEAD 工作树 0 命中）；SECURITY-REVIEW/CREDENTIAL-REMEDIATION/ROTATION-PLAN 状态同步（SEC-01/07/08 = 静态清理完成、平台失效 PENDING，**未降级**）。
+- **Not Completed**: R3 历史重写（独立 PROPOSED/Skip）；未 commit（等 checkpoint Review）。P1-P3 ✅ 用户已完成（2026-09-30）。
+- **Files Changed**: README.md、WIKI.md、qywx_websocket.py（getenv 默认值）、wechat_weather.py（getenv + import os）、docs/SECURITY-REVIEW.md、docs/SECURITY-CREDENTIAL-REMEDIATION.md、docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md、docs/STATE/DEVELOPMENT_LOG、BACKLOG、HANDOFF、tasks/007。**weather_monitor.py / .env / Hermes 链路零改动**。
+- **New Findings**: README.md:228 非表格形式的会话 ID 日志示例逃过首轮表格清洗——复扫（按值全文布尔）补清；教训见 DEV_LOG。
+- **Test Results**: `scripts/verify.py` 3/3 PASS（legacy 修改后仍可编译）；布尔扫描 tracked 树 0 命中。
+- **Git State**: README/qywx/wechat_weather/多份文档未提交修改 + WIKI.md untracked（已占位符化）；HEAD d37ed3a；未 push。
+- **Next Step**: 用户执行 P1-P3 平台失效 → 回告 → Agent 降级 SEC-01/07/08 并更新基线（轻量，不新建任务）→ M2 终验收尾。
+- **Needs User Decision**: TASK-007 Git checkpoint Review；commit 授权。SEC-01/07/08 最终状态 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN。
+
+
+## 2026-09-30（夜 3）— ZCode（TASK-006：WeCom SECRET 轮换准备）
+- **Project / Milestone**: weather-bot · 安全基线（TASK-004/005 READY_FOR_REVIEW、TASK-006 COMPLETED）· M2 终验尾巴不变
+- **Current Task**: tasks/completed/006-wecom-secret-rotation-prep.md（**COMPLETED**——Review PASS，两项修正已落）
+- **Completed**: docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md（SECRET 消费方 C1-C5、部署面四方确认表、Before/Rotation/After 步骤、不可逆回滚设计）；STATE/BACKLOG/DEV_LOG 同步。
+- **Not Completed**: 轮换执行（待批准+待部署面确认）；SEC-R2 清理；U5/部署面 UNKNOWN 项（用户确认）。
+- **Files Changed**: 新增 tasks/006-*.md 与 docs/SECURITY-CREDENTIAL-ROTATION-PLAN.md；修改 STATE/BACKLOG/DEV_LOG/HANDOFF。**业务代码零改动**。
+- **New Findings**: wechat_weather.py 的 webhook 用法把 AI Bot SECRET 字符串当群机器人 webhook key 使用——该对象语义不同，此用法是否曾成功投递 UNKNOWN；轮换后该字面量必然失效，默认建议随 legacy 下线。
+- **Test Results**: 纯文档任务；消费方取证值已掩码输出。
+- **Git State**: 工作区 = TASK-004/005/006 安全文档 + 前轮遗留（.gitignore、WIKI.md OUT OF SCOPE）；HEAD d37ed3a；未 commit。
+- **Next Step**: 用户 Review 三份安全文档（SECURITY-REVIEW / CREDENTIAL-REMEDIATION / ROTATION-PLAN）→ 确认部署面 → 批准后按 ROTATION-PLAN 执行轮换（用户平台操作）。
+- **Review 结果**：PASS（两项修正已落文档：失效语义 UNKNOWN 化 + 独立凭据对象建模；联动 CREDENTIAL-REMEDIATION/SECURITY-REVIEW）。
+- **Needs User Decision**: **U5 运行面确认（轮换执行前置）**：Railway/Render 活跃性与配置、legacy webhook 路径是否仍被使用；轮换窗口；SEC-T2/T3 是否立项。
+
+
+## 2026-09-30（夜 2）— ZCode（TASK-005：凭据暴露处置设计）
+- **Project / Milestone**: weather-bot · 安全基线（TASK-004/005 均待 Review）· M2 终验尾巴不变
+- **Current Task**: tasks/005-credential-exposure-remediation-design.md（**READY_FOR_REVIEW**）
+- **Completed**: docs/SECURITY-CREDENTIAL-REMEDIATION.md（资产清单 A1-A8、四维影响分析、SEC-R1..R4、风险与回滚、AC 全 PROPOSED）；泄露值 vs 在用值布尔判定完成；STATE/BACKLOG/DEV_LOG 同步。
+- **Not Completed**: 一切执行（轮换/清理/重写/迁移均未实施，待批准立项）；U5 使用方盘点（用户）。
+- **Files Changed**: 新增 tasks/005-*.md 与 docs/SECURITY-CREDENTIAL-REMEDIATION.md；修改 BACKLOG/STATE/DEV_LOG/HANDOFF。**业务代码零改动**。
+- **New Findings**: ①SECRET/BOT_ID/CHAT_ID 泄露值=在用值（活凭据公开，轮换最高优先）；②HEFENG 泄露为旧值，在用 key 未暴露；③LLM_API_KEY=.env 占位符 → LLM 文案当前实际不可用（一直降级模板）——运营事实，待用户决定是否配置真实 key。
+- **Test Results**: 本任务为纯文档任务；取证命令仅输出行号/计数/同异布尔，凭据值零打印。
+- **Git State**: 工作区 = TASK-004/005 文档 + 前轮遗留（.gitignore 的 .mimosa 忽略项、WIKI.md OUT OF SCOPE）；HEAD d37ed3a；未 commit。
+- **Next Step**: 用户 Review 两份安全文档（SECURITY-REVIEW.md + SECURITY-CREDENTIAL-REMEDIATION.md）→ 批准后立项实施（SEC-T1/R1 为最高优先）。
+- **Needs User Decision**: 批准 SEC-R1..R4 执行范围与顺序；U5 使用方盘点；是否配置真实 LLM key（附带发现）。
+
+
+## 2026-09-30（夜）— ZCode（TASK-004：安全基线与修复设计）
+- **Project / Milestone**: weather-bot · M2 Watchdog（终验尾巴 BL-014/BL-016）+ 安全基线建立
+- **Current Task**: tasks/004-security-baseline-design.md（**READY_FOR_REVIEW**）
+- **Completed**: docs/SECURITY-REVIEW.md（攻击面总览、S-01..S-10 定级 TP×6/FP×4、SEC-T1/T2/T3 修复设计全部 PROPOSED、U1-U6 Unknowns）；BL-012/BL-018 关联定级、BL-019 立案；STATE/DEV_LOG 同步。
+- **Not Completed**: 一切修复实施（SEC-T1/T2/T3 均待批准）；凭据轮换（用户平台操作）；真实样本取证（U3/U4 需 L3 授权）。
+- **Files Changed**: 仅新增 tasks/004-*.md 与 docs/SECURITY-REVIEW.md，修改 BACKLOG/STATE/DEV_LOG/HANDOFF。**业务代码零改动**。
+- **New Findings**: SEC-06（WS 证书校验禁用→订阅凭据可被 MITM 截获，全项目最高危单点）；SEC-08/09（README 已提交 + WIKI 未跟踪均含非占位符凭据内容，值零打印）；U1 仓库可见性 UNKNOWN。
+- **Test Results**: `scripts/verify.py` 3/3 PASS（回归守护，L0）。
+- **Git State**: 工作区 = 本任务文档新增/修改 + 前轮遗留的 ` M .gitignore`（.mimosa 忽略项）与 `?? WIKI.md`（OUT OF SCOPE）；HEAD d37ed3a；未 commit。
+- **Next Step**: 用户 Review SECURITY-REVIEW.md → 批准 SEC-T1/T2/T3 中任意项即立项实施；建议同步完成 U1（仓库可见性，1 分钟）。
+- **Needs User Decision**: SEC-T1/T2/T3 批准与否；凭据轮换时机（U1 已决议：仓库 Public，2026-09-30 → SEC-01/07/08 Exposure=CONFIRMED，轮换紧急度最高；Compromise=UNKNOWN）。SECURITY-REVIEW.md §2/§3/§5 已同步该事实。
+
+
 ## 2026-09-30（晚）— ZCode（TASK-003：Watchdog 实现收敛）
 - **Project / Milestone**: weather-bot · M2 Watchdog（IN_PROGRESS——实现收敛已完成并入库，剩终验尾巴 BL-014/BL-016）
 - **Current Task**: tasks/completed/003-watchdog-convergence.md（**COMPLETED**，Final Review PASS）

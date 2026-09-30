@@ -1,11 +1,12 @@
+import os
 import requests
 from datetime import datetime
 
-HEFENG_API_KEY = "bb4de13c914d421a9aa4f255df9de5c9"
+HEFENG_API_KEY = os.getenv("HEFENG_API_KEY", "")
 CITY_ID = "101080101"
 CITY_NAME = "呼和浩特"
 
-QYWX_WEBHOOK_KEY = "ST6Ytrm7M1BAlVOCVxuGwMKrNg7hoWR3rStapaIak9D"
+QYWX_WEBHOOK_KEY = os.getenv("QYWX_WEBHOOK_KEY", "")
 
 def get_weather_now(location):
     url = "https://mg5u9xcaf3.re.qweatherapi.com/v7/weather/now"

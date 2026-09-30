@@ -41,16 +41,16 @@ def get_beijing_date_str():
     return get_beijing_time().strftime("%Y-%m-%d")
 
 # 配置项
-BOT_ID = os.getenv("BOT_ID", "aibq4IJma9oTpus6NeE6--WVJtJaK_0O3wN")
-SECRET = os.getenv("SECRET", "ST6Ytrm7M1BAlVOCVxuGwMKrNg7hoWR3rStapaIak9D")
+BOT_ID = os.getenv("BOT_ID", "")
+SECRET = os.getenv("SECRET", "")
 WS_URL = "wss://openws.work.weixin.qq.com"
 
-HEFENG_API_KEY = os.getenv("HEFENG_API_KEY", "bb4de13c914d421a9aa4f255df9de5c9")
+HEFENG_API_KEY = os.getenv("HEFENG_API_KEY", "")
 CITY_ID = os.getenv("CITY_ID", "101080101")
 CITY_NAME = os.getenv("CITY_NAME", "呼和浩特")
 
 SCHEDULE_TIME = os.getenv("SCHEDULE_TIME", "08:00")
-SCHEDULE_CHAT_ID = os.getenv("SCHEDULE_CHAT_ID", "wrpv4ybQAA1abzhZBJZ8SaOVZIb5u9NA")
+SCHEDULE_CHAT_ID = os.getenv("SCHEDULE_CHAT_ID", "")
 SCHEDULE_CHAT_TYPE = int(os.getenv("SCHEDULE_CHAT_TYPE", "2"))
 
 MAX_RECONNECT_ATTEMPTS = 10
