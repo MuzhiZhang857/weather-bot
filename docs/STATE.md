@@ -29,7 +29,7 @@
 
 ## 3. 当前正在开发什么
 
-**TASK-004/005/008 全部 COMPLETED（TASK-009 状态同步，2026-10-01）**：安全基线（SECURITY-REVIEW）、凭据处置设计（SEC-R1..R4）、基线冻结（c556d59 + baseline-v1.0 tag + eb0886e）全部闭环；SEC-01/07/08 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN；REQ-006/015 冻结期转 ACCEPTED。此前闭环：TASK-007（静态清理 + P1-P3 平台失效）、TASK-006（Review + 两项修正）、TASK-003（watchdog 收敛：D1 修复 + 23 例测试）。
+**TASK-010「BL-016 Hermes Runtime Discovery」——只读取证完成，READY_FOR_REVIEW（Gate Review 整改已落）**：BL-016 观测类已取证（调度行为/重叠/失败/同 tag emit 幂等——**投递层 UNKNOWN**；docs/HERMES-RUNTIME-EVIDENCE.md），消费侧语义（G1/G2/G4）仍需 Hermes 侧证据；§1.2 倍增窗口 **Cause=UNKNOWN**（G3：用户已排除手动触发；剩余假设含 Agent/工具触发、多实例并发、重复 handler、多 writer 等）。此前：**TASK-004/005/008 全部 COMPLETED（TASK-009 状态同步，2026-10-01）**：安全基线（SECURITY-REVIEW）、凭据处置设计（SEC-R1..R4）、基线冻结（c556d59 + baseline-v1.0 tag + eb0886e）全部闭环；SEC-01/07/08 = Historical Exposure CONFIRMED / Credential RETIRED/REVOKED / Compromise UNKNOWN；REQ-006/015 冻结期转 ACCEPTED。此前闭环：TASK-007（静态清理 + P1-P3 平台失效）、TASK-006（Review + 两项修正）、TASK-003（watchdog 收敛：D1 修复 + 23 例测试）。
 
 ## 4. 已知 Bug
 
@@ -63,7 +63,7 @@
 
 1. ~~Review 待审文档~~ **已全部闭环**（TASK-004/005/008 COMPLETED @ TASK-009；BASELINE-c556d59 为一致性校验基准）。下一步候选（均待用户授权立项）：M2 终验（BL-014）、M3 Runtime Integration（BL-016 七项取证）。
 2. **已完成归档**：P1-P3 平台失效 ✅（2026-09-30）；U5 运行面 ✅（Hermes 活跃用于 QQ 推送；Railway/Render/WeCom/legacy 退役）；TASK-007 checkpoint ✅（f2358de）；基线冻结 ✅（c556d59）。
-3. **M2 终验尾巴**：BL-014（README/WIKI 内容对齐，凭据部分已清）。4. **M3 Runtime Integration（核心，Gate Review 修正）**：BL-016 七项 UNKNOWN（调度频率/重叠执行/stdout 消费/空输出/exit code/失败重试/重试与去重关系）清零 + 退役配置处置 + README runtime 对齐。
+3. **M2 终验尾巴**：BL-014（README/WIKI 内容对齐，凭据部分已清）。4. **M3 Runtime Integration（核心，Gate Review 修正）**：BL-016 七项 UNKNOWN——观测类已取证（TASK-010：频率/重叠/失败/同 tag emit 幂等），**剩余 G1-G4**（Hermes 消费语义/exit code/重试策略/倍增窗口机制/投递样本）+ 退役配置处置 + README runtime 对齐。
 
 ## 9. 文档-代码 CONFLICT 清单（2026-09-30 逐项核查结果）
 

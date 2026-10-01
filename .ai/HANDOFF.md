@@ -49,6 +49,19 @@
 
 ## 交接记录
 
+## 2026-10-01 — ZCode（TASK-010：BL-016 Hermes Runtime Discovery）
+- **Project / Milestone**: weather-bot · M3 Runtime Integration（取证阶段完成）· 基线 c556d59 + baseline-v1.0
+- **Current Task**: tasks/010-hermes-runtime-discovery.md（**READY_FOR_REVIEW**）
+- **Completed**: 只读日志 forensic（19,597 行，窗口 8/16–10/01）：544 次运行/26 活跃日/457 完成/1 异常（8/28 GBK 崩溃→ADR-011 链实证）；频率行为（活跃日 ~20 次、10:00–02:59 分布、03–09 死区、无固定节律）；重叠执行 2 对（8/28）+ 9/30–10/01 倍增窗口（×5–24，成因待分诊）；去重幂等实证（776 静默/124 打印≈4.8 再提醒/日）。产出 docs/HERMES-RUNTIME-EVIDENCE.md（七项 UNKNOWN 证据分级）。
+- **Not Completed**: 消费侧语义（G1/G2/G4）仍需 Hermes 侧证据；倍增窗口分诊（G3，PROPOSED 日志加实例标识）；未关闭 BL-016；零代码改动。
+- **Files Changed**: 新增 docs/HERMES-RUNTIME-EVIDENCE.md、tasks/010-*.md；修改 BACKLOG（BL-016 状态）、STATE、HANDOFF、DEV_LOG。**logs/ 只读，零写入；业务代码零改动**。
+- **New Findings**: ①9/10–9/17 连续 8 天零运行（停运原因 UNKNOWN）；②9/30–10/01 非均匀日志倍增（Cause=UNKNOWN；**G3：用户已排除手动触发**；剩余假设 Agent/工具触发、多实例并发、重复 handler、多 writer 等，不得归因 Hermes 并发）；③GBK→UTF-8 崩溃链（ADR-011）获得原始事件实证；④同 tag emit 幂等获观测支持（**仅 producer 层**——Hermes→QQ 投递是否重复 UNKNOWN）。
+- **Test Results**: 只读任务；统计脚本输出与原始日志行抽查对照一致；verify.py 3/3 PASS（零代码改动确认）。
+- **Git State**: HEAD eb0886e；工作区 = 本任务文档 + 前轮文档（均未 commit）；logs/ 无新写入。
+- **Next Step**: 用户 Review 证据文档（Gate Review 整改后版本）→ 提供 G1/G2 Hermes 侧信息或授权 G3 剩余分诊（日志加实例标识）→ M3 契约起草。
+- **Needs User Decision**: G1/G2 的 Hermes 信息；G3 剩余分诊授权（日志加实例标识，PROPOSED）；M3 契约起草立项。
+
+
 ## 2026-10-01 — ZCode（TASK-009：文档状态同步）
 - **Project / Milestone**: weather-bot · 基线已冻结（c556d59 + baseline-v1.0 tag + eb0886e）· M2 终验尾巴 BL-014 / M3 Runtime Integration 待立项
 - **Current Task**: tasks/009-documentation-state-sync.md（**READY_FOR_REVIEW**，等待用户 Review）

@@ -3,6 +3,13 @@
 > 职责：记录里程碑完成、重大决策、重大事故、重要失败尝试、跨 Agent 交接检查点。
 > **不记录**普通代码操作流水账（那是 git log 的职责）。建立于 TASK-000（2026-09-30）；此前事件按仓库证据回填。
 
+## 2026-10-01 · BL-016 Hermes Runtime Discovery（TASK-010，READY_FOR_REVIEW）
+
+- 用户授权只读取证；产出 `docs/HERMES-RUNTIME-EVIDENCE.md`（七项 UNKNOWN 证据分级：观测类已取证，消费侧 G1/G2/G4 仍 UNKNOWN）。
+- 观测要点：460 唯一启动/26 活跃日（8/28–10/01）；03:00–09:59 死区；重叠执行 2 对（8/28）+ 9/30–10/01 非均匀日志倍增（**Cause=UNKNOWN；G3 用户已排除手动触发**；剩余假设含 Agent/工具触发、多实例并发、重复 handler、多 writer 等，不得归因 Hermes 并发）；8/28 GBK 崩溃原始事件实证（ADR-011 链）；同 tag emit 幂等获观测支持（**仅 producer 层，投递层 UNKNOWN**）；高频 re-alert（≈4.8/日）为行为观测，**Cause=UNKNOWN**（D4 为候选解释之一）。
+- 9/10–9/17 连续 8 天零运行（停运原因 UNKNOWN，新发现）。
+- BL-016 保持 Open（观测类已取证）；logs/ 零写入；业务代码零改动。
+
 ## 2026-10-01 · 文档状态同步（TASK-009，READY_FOR_REVIEW）
 
 - 用户指令将 TASK-004/005/008 与真实项目状态同步；零代码/零配置/零安全策略改动。
